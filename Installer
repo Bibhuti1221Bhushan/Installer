@@ -106,14 +106,11 @@ cat <<EOF > /mnt/runme
 echo "--------------------------------------"
 echo "-- Bootloader Systemd Installation  --"
 echo "--------------------------------------"
-bootctl install --esp-path /mnt/boot
-cat <<EOF > /mnt/boot/loader/entries/arch.conf
-title Arch Linux
-linux /vmlinuz-linux
-initrd /initramfs-linux.img
-options root="$IN_DEVICE"1 rw
-EOF
 echo hello world
+echo "$HOSTNAME" > /etc/hostname
 EOF
 chmod 0755 /mnt/runme
-chroot /mnt /runme
+arch-chroot /mnt /runme
+
+arch-chroot /mnt sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
+arch-chroot /mnt locale-gen
