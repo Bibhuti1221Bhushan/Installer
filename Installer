@@ -1,0 +1,107 @@
+#!/bin/bash
+
+
+# ------------------ #
+# SET SOME VARIABLES #
+# ------------------ #
+USERNAME="Bibhuti"				# SET USER NAME
+FULLNAME="Bibhuti Bhushan"		# SET FULL NAME
+USERPASSWORD="\\"				# SET USER PASSWORD
+ROOTPASSWORD="\\"				# SET ROOT PASSWORD
+HOSTNAME="iTunes"				# SET THE HOST NAME
+TIMEZONE="Asia/Kolkata"		# SET TIME-ZONE
+LOCALE="en_US.UTF-8"			# SET LOCALE
+LANGUAGE="en_US.UTF-8"          # SET LOCALE.CONF
+KEYBOARD="us" 					# SET KEYBOARD 
+
+# ------------------ #
+# SET DISK VARIABLES #
+# ------------------ #
+IN_DEVICE=/dev/sda              # SET DRIVE FOR INSTALL
+FILESYSTEM=ext4                 # SET FILESYSTEM
+
+# SET SIZE OF DRIVE
+BOOT_SIZE=550MiB                  # SET BOOT PARTITION SIZE
+SWAP_SIZE=8GiB                    # SET SWAP PARTITION SIZE
+ROOT_SIZE=35GiB                   # SET ROOT PARTITION SIZE
+HOME_SIZE=                      # REMAINING SPACE FOR HOME PARTITION
+
+# ------------- #
+# SET PACKAGES  #
+# ------------- #
+KERNEL=( linux-lts linux-lts-headers )  # SET KERNEL
+MICROCODE=( intel-ucode )       # SET MICROCODE
+EXTRA=( git neovim )
+
+
+
+# ----------------------- #
+# SCRIPT START FROM HERE  #
+# ----------------------- #
+
+# VERIFY BOOT MODE
+if [ ! -d /sys/firmware/efi/efivars ]; then
+  # GIVE AN ERROR
+  echo "YOU ARE NOT BOOTED IN UEFI"
+  exit 1
+fi
+
+## CHECK TIME AND DATE BEFORE INSTALLATION
+timedatectl set-ntp true
+echo && echo "Date/Time Service Status is . . . "
+timedatectl status
+sleep 3
+
+
+# PARTITION THE DISK
+echo "\nWiping Drive "$IN_DEVICE" ...\n"
+wipefs -af "$IN_DEVICE" &>/dev/null
+sgdisk -Zo "$IN_DEVICE" &>/dev/null
+
+echo "\nCreating Partitions...\n"
+parted "$IN_DEVICE" -s mklabel gpt
+parted "$IN_DEVICE" -s mkpart ESP fat32 1MiB $BOOT_SIZE
+parted "$IN_DEVICE" -- set 1 esp on
+parted "$IN_DEVICE" -s mkpart primary linux-swap $BOOT_SIZE $SWAP_SIZE
+parted "$IN_DEVICE" -s mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE
+parted "$IN_DEVICE" -s mkpart primary ext4 $ROOT_SIZE 100%
+
+# FORMAT THE PARTITIONS
+echo "\nFormatting Partitions...\n"
+mkfs.fat -F 32 -n ESP "$IN_DEVICE"1
+mkswap -L SWAP "$IN_DEVICE"2
+mkfs.ext4 -L ROOT "$IN_DEVICE"3
+mkfs.ext4 -L HOME "$IN_DEVICE"4
+
+# MOUNT THE PARTITIONS
+echo "\nMounting Partitions...\n"
+mount "$IN_DEVICE"3 /mnt
+mkdir -p /mnt/boot
+mount "$IN_DEVICE"1 /mnt/boot
+mkdir /mnt/home 
+mount "$IN_DEVICE"4 /mnt/home
+swapon "$IN_DEVICE"2
+
+# INSTALLING BASE SYSTEM 
+echo -e "\nInstalling Base Packages...\n"
+pacstrap -Ki /mnt base base-devel linux-firmware $KERNEL $MICROCODE $EXTRA
+
+# GENERATE THE FSTAB FILE
+echo -e "\nGenerating FSTab File...\n"
+genfstab -U /mnt >> /mnt/etc/fstab
+
+
+
+echo "--------------------------------------"
+echo "-- Bootloader Systemd Installation  --"
+echo "--------------------------------------"
+bootctl install --esp-path /mnt/boot
+cat <<EOF > /mnt/boot/loader/entries/arch.conf
+title Arch Linux
+linux /vmlinuz-linux
+initrd /initramfs-linux.img
+options root="$IN_DEVICE"1 rw
+EOF
+
+# CHROOT INTO THE NEW ARCH LINUX INSTALLATION
+arch-chroot /mnt
