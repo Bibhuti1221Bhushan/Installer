@@ -104,4 +104,10 @@ options root="$IN_DEVICE"1 rw
 EOF
 
 # CHROOT INTO THE NEW ARCH LINUX INSTALLATION
-arch-chroot /mnt
+arch-chroot /mnt /bin/bash <<END
+echo "-------------------------------"
+echo "-- Hello World -------"
+ln -sf /usr/share/zoneinfo/"$TIMEZONE" /etc/localtime
+hwclock --systohc 
+echo "$HOSTNAME" > /mnt/etc/hostname
+END
