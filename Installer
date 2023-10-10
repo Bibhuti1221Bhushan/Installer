@@ -51,7 +51,6 @@ KEYBOARD="us" 				      	     # SET KEYBOARD
 # SET DISK VARIABLES :
 # ~~~~~~~~~~~~~~~~~~~~
 DISK=/dev/sda                            # SET DISK FOR INSTALL
-FILESYSTEM=ext4                          # SET FILESYSTEM
 
 # SET SIZE OF DRIVE :
 # ~~~~~~~~~~~~~~~~~~~
@@ -62,7 +61,7 @@ HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
 
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
-KERNEL="linux-lts linux-lts-headers"     # SET KERNEL
+KERNEL="linux-lts"                       # SET KERNEL
 MICROCODE="intel-ucode"                  # SET MICROCODE
 EXTRA="git neovim"                       # EXTRA PACKAGES LIKE EDITOR...
 
@@ -89,9 +88,9 @@ fi
 
 # TITLE SHOW :
 # ~~~~~~~~~~~~
-echo -e "${BBLUE}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}"
-echo -e "${BBLUE}                                                           ~~ EASY ARCH INSTALL ~~    ${RESET}"
-echo -e "${BBLUE}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}" 
+echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                           ~~ EASY ARCH INSTALL ~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}" 
 
 # SYNC TIME AND DATE : 
 # ~~~~~~~~~~~~~~~~~~~~
@@ -99,7 +98,7 @@ Info_Print "SYNCING TIME AND DATE..."
 echo
 timedatectl set-ntp true
 sleep 3
-Done_Print "DONE"
+Done_Print "DONE - SYNCING TIME AND DATE..."
 echo
 
 # WIPE THE DISK :
@@ -108,7 +107,7 @@ Info_Print "WIPING DISK..."
 echo
 wipefs -af "$DISK"
 sgdisk -Zo "$DISK"
-echo -e "${BGREEN}DONE"
+Done_Print "DONE - WIPING DISK..."
 echo
 
 # PARTITION THE DISK :
@@ -121,7 +120,7 @@ parted "$DISK" -s set 1 esp on
 parted "$DISK" -s mkpart primary linux-swap $BOOT_SIZE $SWAP_SIZE
 parted "$DISK" -s mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE
 parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100%
-echo -e "${BGREEN}DONE"
+Done_Print "DONE - CREATING PARTITIONS..."
 echo
 
 # FORMAT THE PARTITIONS :
@@ -132,7 +131,7 @@ mkfs.fat -F 32 -n ESP "$DISK"1
 mkswap -L SWAP "$DISK"2
 mkfs.ext4 -L ROOT "$DISK"3
 mkfs.ext4 -L HOME "$DISK"4
-echo -e "${BGREEN}DONE"
+Done_Print "DONE - FORMATING PARTITIONS..."
 echo
 
 # MOUNT THE PARTITIONS :
@@ -145,7 +144,7 @@ mount "$DISK"1 /mnt/boot
 mkdir /mnt/home 
 mount "$DISK"4 /mnt/home
 swapon "$DISK"2
-echo -e "${BGREEN}DONE"
+Done_Print "DONE - MOUNTING PARTITIONS..."
 echo
 
 # INSTALLING BASE SYSTEM :
@@ -153,45 +152,56 @@ echo
 clear
 Info_Print "INSTALLING BASE SYSTEM PACKAGES..."
 echo
-pacstrap -Ki /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $MICROCODE $EXTRA
-echo -e "${BGREEN}DONE"
+pacstrap -Ki /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE $EXTRA
+Done_Print "DONE - INSTALLING BASE SYSTEM PACKAGES..."
 echo
 
 # GENERATE THE FSTAB FILE :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
 Info_Print "GENERATING FSTAB FILE..."
 echo
-echo -e "Generating FSTab File..."
 genfstab -U /mnt >> /mnt/etc/fstab
-echo -e "${BGREEN}DONE"
+Done_Print "DONE - GENERATING FSTAB FILE..."
 echo
 
-# ------------------------------ #
-# CHROOT CONFIG START FROM HERE  #
-# ------------------------------ #
+# ------------------------------------- #
+# --- CHROOT CONFIG START FROM HERE --- #
+# ------------------------------------- #
 
-echo -e "${BBLUE}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}"
-echo -e "${BBLUE}                                                              ~~ CHROOT CONFIG ~~    ${RESET}"
-echo -e "${BBLUE}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}" 
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo -e "${BBLUE}${BOLD}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                              ~~ CHROOT CONFIG ~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}" 
 
 # SET TIME-ZONE :
 # ~~~~~~~~~~~~~~~
 clear
+Info_Print "SETTING TIME-ZONE..."
+echo
 arch-chroot /mnt ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 arch-chroot /mnt hwclock --systohc
 arch-chroot /mnt date
-
+Done_Print "DONE - SETTING TIME-ZONE..."
+echo
+sleep 3
 
 # GENERATE LOCALE :
 # ~~~~~~~~~~~~~~~~~
 clear
+Info_Print "GENERATING LOCALE..."
+echo
 arch-chroot /mnt sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
 arch-chroot /mnt locale-gen
+Done_Print "DONE - GENERATING LOCALE..."
+echo
+sleep 3
 
-
-# SET LOCALE LANGUAGE :
-# ~~~~~~~~~~~~~~~~~~~~~
+# SET LOCALE UNITS :
+# ~~~~~~~~~~~~~~~~~~
 clear
+Info_Print "SETTING LOCALE UNITS..."
+echo
 echo "LANG=$LANGUAGE" > /mnt/etc/locale.conf
 echo "LC_COLLATE=$LANGUAGE" >> /mnt/etc/locale.conf
 echo "LC_ADDRESS=$LANGUAGE" >> /mnt/etc/locale.conf
@@ -205,80 +215,178 @@ echo "LC_NUMERIC=$LANGUAGE" >> /mnt/etc/locale.conf
 echo "LC_PAPER=$LANGUAGE" >> /mnt/etc/locale.conf
 echo "LC_TELEPHONE=$LANGUAGE" >> /mnt/etc/locale.conf
 echo "LC_TIME=$LANGUAGE" >> /mnt/etc/locale.conf
-
+Done_Print "DONE - SETTING LOCALE UNITS..."
+echo
+sleep 3
 
 # SET HOST-NAME :
 # ~~~~~~~~~~~~~~~
 clear
+Info_Print "SETTING HOST-NAME..."
+echo
 echo "$HOSTNAME" > /mnt/etc/hostname
-
-
-cat /mnt/etc/hostname 
+Done_Print "DONE - SETTING HOST-NAME..."
+echo
+sleep 3
 
 # SET HOSTS :
 # ~~~~~~~~~~~
 clear
+Info_Print "SETTING HOSTS FILE..."
+echo
 cat > /mnt/etc/hosts <<HOSTS
 127.0.0.1      localhost
 ::1            localhost
 127.0.1.1      $HOSTNAME.localdomain     $HOSTNAME
 HOSTS
-
-cat /mnt/etc/hosts
-
+Done_Print "DONE - SETTING HOSTS FILE..."
+echo
+sleep 3
 
 # SET ROOT PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
 clear
+Info_Print "SETTING ROOT PASSWORD..."
+echo
 echo -e "$ROOTPASSWORD\n$ROOTPASSWORD" | passwd root
-
+Done_Print "DONE - SETTING ROOT PASSWORD..."
+echo
+sleep 3
 
 # CREATE USER ACCOUNT :
 # ~~~~~~~~~~~~~~~~~~~~~
 clear
+Info_Print "CREATING USER ACCOUNT..."
+echo
 arch-chroot /mnt useradd -m "$USERNAME" -c "$FULLNAME"
 arch-chroot /mnt usermod -aG wheel,audio,video,optical,storage,disk,network,power,input "$USERNAME"
 echo -e "$USERPASSWORD\n$USERPASSWORD" | passwd "$USERNAME"
 arch-chroot /mnt sed -i 's/# %wheel/%wheel/g' /etc/sudoers
-
+Done_Print "DONE - CREATING USER ACCOUNT..."
+echo
+sleep 3
 
 # SET CONSOLE KEYMAP :
 # ~~~~~~~~~~~~~~~~~~~~
 clear
-echo "KEYMAP=$KEYMAP" > /mnt/etc/vconsole.conf
+Info_Print "SETTING CONSOLE KEYMAP..."
+echo
+echo "KEYMAP=$KEYBOARD" > /mnt/etc/vconsole.conf
+echo "XKBLAYOUT=$KEYBOARD" >> /mnt/etc/vconsole.conf
+Done_Print "DONE - SETTING CONSOLE KEYMAP..."
+echo
+sleep 3
 
-
-# EYE-CANDY PACMAN :
+# MODIFYING PACMAN :
 # ~~~~~~~~~~~~~~~~~~
 clear
-sed -i 's #Color Color ; s #ParallelDownloads ParallelDownloads ; s #\[multilib\] \[multilib\] ; /\[multilib\]/{n;s #Include Include }' /etc/pacman.conf
-sed -i '/NoProgressBar/iILoveCandy' /etc/pacman.conf
-
-
+Info_Print "MODIFYING PACMAN..."
+echo
+sed -i 's #Color Color ; s #ParallelDownloads ParallelDownloads ; s #\[multilib\] \[multilib\] ; /\[multilib\]/{n;s #Include Include }' /mnt/etc/pacman.conf
+sed -i '/NoProgressBar/iILoveCandy' /mnt/etc/pacman.conf
+Done_Print "DONE - MODIFYING PACMAN..."
+echo
+sleep 3
 
 # INITIALISING PACMAN KEYRINGS :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 clear
+Info_Print "INITIALISING PACMAN KEYRINGS..."
+echo
 pacman-key --init
 pacman-key --populate
-
+Done_Print "DONE - INITIALISING PACMAN KEYRINGS..."
+echo
+sleep 3
 
 # SYNC FASTEST MIRRORS :
 # ~~~~~~~~~~~~~~~~~~~~~~
 clear
-echo -e "--save /etc/pacman.d/mirrorlist\n--country India,\n--protocol https\n--score 10\n" > /mnt/etc/xdg/reflector/reflector.conf
-reflector --save /etc/pacman.d/mirrorlist --country Sweden,Denmark --protocol https --score 10 --verbose
+Info_Print "SYNCING FASTEST MIRRORS..."
+echo
+arch-chroot /mnt echo -e "--save /etc/pacman.d/mirrorlist\n--country India,\n--protocol https\n--score 10\n" > /etc/xdg/reflector/reflector.conf
+arch-chroot /mnt reflector --save /etc/pacman.d/mirrorlist --country Sweden,Denmark --protocol https --score 10 --verbose
+Done_Print "DONE - SYNCING FASTEST MIRRORS..."
+echo
+sleep 3
 
+# SET NETWORK MANAGER :
+# ~~~~~~~~~~~~~~~~~~~~~
+clear
+Info_Print "SETTING NETWORK MANAGER..."
+echo
+arch-chroot /mnt pacman -Sy --needed --noconfirm networkmanager
+arch-chroot /mnt systemctl enable NetworkManager
+Done_Print "DONE - SETTING NETWORK MANAGER..."
+echo
+sleep 3
 
+# NO WATCH-DOG :
+# ~~~~~~~~~~~~~~
+clear
+Info_Print "DISABLING WATCH-DOG LOG..."
+echo
+echo "blacklist iTCO_wdt" > /mnt/etc/modprobe.d/nowatchdog.conf
+Done_Print "DONE - DISABLING WATCH-DOG LOG..."
+echo
+sleep 3
 
+# RE-INITIALIZE INITRAMFS :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+clear
+Info_Print "RE-INITIALISING INITRAMFS..."
+echo
+arch-chroot /mnt mkinitcpio -P
+Done_Print "DONE - RE-INITIALISING INITRAMFS..."
+echo
+sleep 3
 
-
-
-
-
-
-
-
+# SET BOOT LOADER :
+# ~~~~~~~~~~~~~~~~~
+clear
+Info_Print "SETTING BOOT LOADER..."
+echo
+arch-chroot /mnt bootctl install
+cat <<EOF > /mnt/boot/loader/entries/arch.conf
+title   Boot Manager
+linux   /vmlinuz-$KERNEL
+initrd  /$MICROCODE.img
+initrd  /initramfs-$KERNEL.img
+options root=$DISK1 rw
 EOF
-chmod 0755 /mnt/Config
-arch-chroot /mnt /Config
+Done_Print "DONE - SETTING BOOT LOADER..."
+echo
+sleep 3
+
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                           ~~ INSTALLATION DONE ~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}" 
+echo
+echo
+echo
+echo -en "${BBLUE}${BOLD}REBOOTING IN 10 SEC... ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}1  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}2  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}3  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}4  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}5  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}6  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}7  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}8  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}9  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}10  ${RESET}" 
+reboot
+
+
