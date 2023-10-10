@@ -1,116 +1,284 @@
 #!/bin/bash
 
+# -------------------------------------------------------- #
+# Author : Bibhuti Bhushan                                 #
+# Github : https://github.com/Bibhuti1221Bhushan/Installer #
+# -------------------------------------------------------- #
 
-# ------------------ #
-# SET SOME VARIABLES #
-# ------------------ #
-USERNAME="Bibhuti"				# SET USER NAME
-FULLNAME="Bibhuti Bhushan"		# SET FULL NAME
-USERPASSWORD="\\"				# SET USER PASSWORD
-ROOTPASSWORD="\\"				# SET ROOT PASSWORD
-HOSTNAME="iTunes"				# SET THE HOST NAME
-TIMEZONE="Asia/Kolkata"		# SET TIME-ZONE
-LOCALE="en_US.UTF-8"			# SET LOCALE
-LANGUAGE="en_US.UTF-8"          # SET LOCALE.CONF
-KEYBOARD="us" 					# SET KEYBOARD 
+# ---------------------------- #
+# --- SET COSMETICS THINGS --- #
+# ---------------------------- # 
 
-# ------------------ #
-# SET DISK VARIABLES #
-# ------------------ #
-IN_DEVICE=/dev/sda              # SET DRIVE FOR INSTALL
-FILESYSTEM=ext4                 # SET FILESYSTEM
+# COLOR VARIABLES :
+# ~~~~~~~~~~~~~~~~~ 
+BYELLOW='\e[93m'                         # BOLD YELLOW    
+BGREEN='\e[92m'                          # BOLD GREEN    
+BBLUE='\e[34m'                           # BOLD BLUE      
+BRED='\e[91m'                            # BOLD RED   
+RESET='\e[0m'                            # RESET       
+BOLD='\e[1m'                             # BOLD
+       
+# PRETTY PRINT FUNCTIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print () {
+    echo -e "${BOLD}${BGREEN}[ ${BYELLOW}•${BGREEN} ] $1${RESET}"
+}
 
-# SET SIZE OF DRIVE
-BOOT_SIZE=550MiB                  # SET BOOT PARTITION SIZE
-SWAP_SIZE=8GiB                    # SET SWAP PARTITION SIZE
-ROOT_SIZE=35GiB                   # SET ROOT PARTITION SIZE
-HOME_SIZE=                      # REMAINING SPACE FOR HOME PARTITION
+Done_Print () {
+    echo -e "${BOLD}${BYELLOW}[ ${BGREEN}•${BYELLOW} ] $1${RESET}"
+}
 
-# ------------- #
-# SET PACKAGES  #
-# ------------- #
-KERNEL=( linux-lts linux-lts-headers )  # SET KERNEL
-MICROCODE=( intel-ucode )       # SET MICROCODE
-EXTRA=( git neovim )
+Issue_Print () {
+    echo -e "${BOLD}${BRED}[ ${BBLUE}•${BRED} ] $1${RESET}"
+}
+
+# -------------------------- #
+# --- SET SOME VARIABLES --- #
+# -------------------------- #
+
+# SET NORMAL VARIABLES :
+# ~~~~~~~~~~~~~~~~~~~~~~
+USERNAME="Bibhuti"				         # SET USER NAME
+FULLNAME="Bibhuti Bhushan"		         # SET FULL NAME
+USERPASSWORD="\\"			      	     # SET USER PASSWORD
+ROOTPASSWORD="\\"			      	     # SET ROOT PASSWORD
+HOSTNAME="iTunes"			      	     # SET THE HOST NAME
+TIMEZONE="Asia/Kolkata"	    	         # SET TIME-ZONE
+LOCALE="en_US.UTF-8"			         # SET LOCALE
+LANGUAGE="en_US.UTF-8"                   # SET LOCALE.CONF
+KEYBOARD="us" 				      	     # SET KEYBOARD 
+
+# SET DISK VARIABLES :
+# ~~~~~~~~~~~~~~~~~~~~
+DISK=/dev/sda                            # SET DISK FOR INSTALL
+FILESYSTEM=ext4                          # SET FILESYSTEM
+
+# SET SIZE OF DRIVE :
+# ~~~~~~~~~~~~~~~~~~~
+BOOT_SIZE=550MiB                         # SET BOOT PARTITION SIZE
+SWAP_SIZE=8GiB                           # SET SWAP PARTITION SIZE
+ROOT_SIZE=35GiB                          # SET ROOT PARTITION SIZE
+HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
+
+# SET PACKAGES :
+# ~~~~~~~~~~~~~~
+KERNEL="linux-lts linux-lts-headers"     # SET KERNEL
+MICROCODE="intel-ucode"                  # SET MICROCODE
+EXTRA="git neovim"                       # EXTRA PACKAGES LIKE EDITOR...
 
 
+# ------------------------------- #
+# --- SCRIPT START FROM HERE ---  #
+# ------------------------------- #
 
-# ----------------------- #
-# SCRIPT START FROM HERE  #
-# ----------------------- #
+# CLEAR TERMINAL :
+# ~~~~~~~~~~~~~~~~
+clear
 
-# VERIFY BOOT MODE
+# VERIFY BOOT MODE :
+# ~~~~~~~~~~~~~~~~~~
 if [ ! -d /sys/firmware/efi/efivars ]; then
-  # GIVE AN ERROR
-  echo "YOU ARE NOT BOOTED IN UEFI"
+  echo
+  Issue_Print "YOU ARE NOT BOOTED IN UEFI"
+  echo
+  Issue_Print "EXITING..."
+  echo
+  sleep 3
   exit 1
 fi
 
-## CHECK TIME AND DATE BEFORE INSTALLATION
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo -e "${BBLUE}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}"
+echo -e "${BBLUE}                                                           ~~ EASY ARCH INSTALL ~~    ${RESET}"
+echo -e "${BBLUE}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}" 
+
+# SYNC TIME AND DATE : 
+# ~~~~~~~~~~~~~~~~~~~~
+Info_Print "SYNCING TIME AND DATE..."
+echo
 timedatectl set-ntp true
 sleep 3
+Done_Print "DONE"
+echo
 
+# WIPE THE DISK :
+# ~~~~~~~~~~~~~~~
+Info_Print "WIPING DISK..."
+echo
+wipefs -af "$DISK"
+sgdisk -Zo "$DISK"
+echo -e "${BGREEN}DONE"
+echo
 
-# PARTITION THE DISK
-echo "\nWiping Drive "$IN_DEVICE" ...\n"
-wipefs -af "$IN_DEVICE" &>/dev/null
-sgdisk -Zo "$IN_DEVICE" &>/dev/null
+# PARTITION THE DISK :
+# ~~~~~~~~~~~~~~~~~~~~
+Info_Print "CREATING PARTITIONS..."
+echo
+parted "$DISK" -s mklabel gpt
+parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE
+parted "$DISK" -s set 1 esp on
+parted "$DISK" -s mkpart primary linux-swap $BOOT_SIZE $SWAP_SIZE
+parted "$DISK" -s mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE
+parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100%
+echo -e "${BGREEN}DONE"
+echo
 
-echo "\nCreating Partitions...\n"
-parted "$IN_DEVICE" -s mklabel gpt
-parted "$IN_DEVICE" -s mkpart ESP fat32 1MiB $BOOT_SIZE
-parted "$IN_DEVICE" -- set 1 esp on
-parted "$IN_DEVICE" -s mkpart primary linux-swap $BOOT_SIZE $SWAP_SIZE
-parted "$IN_DEVICE" -s mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE
-parted "$IN_DEVICE" -s mkpart primary ext4 $ROOT_SIZE 100%
+# FORMAT THE PARTITIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "FORMATING PARTITIONS..."
+echo
+mkfs.fat -F 32 -n ESP "$DISK"1
+mkswap -L SWAP "$DISK"2
+mkfs.ext4 -L ROOT "$DISK"3
+mkfs.ext4 -L HOME "$DISK"4
+echo -e "${BGREEN}DONE"
+echo
 
-# FORMAT THE PARTITIONS
-echo "\nFormatting Partitions...\n"
-mkfs.fat -F 32 -n ESP "$IN_DEVICE"1
-mkswap -L SWAP "$IN_DEVICE"2
-mkfs.ext4 -L ROOT "$IN_DEVICE"3
-mkfs.ext4 -L HOME "$IN_DEVICE"4
-
-# MOUNT THE PARTITIONS
-echo "\nMounting Partitions...\n"
-mount "$IN_DEVICE"3 /mnt
+# MOUNT THE PARTITIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "MOUNTING PARTITIONS..."
+echo
+mount "$DISK"3 /mnt
 mkdir -p /mnt/boot
-mount "$IN_DEVICE"1 /mnt/boot
+mount "$DISK"1 /mnt/boot
 mkdir /mnt/home 
-mount "$IN_DEVICE"4 /mnt/home
-swapon "$IN_DEVICE"2
+mount "$DISK"4 /mnt/home
+swapon "$DISK"2
+echo -e "${BGREEN}DONE"
+echo
 
-# INSTALLING BASE SYSTEM 
-echo -e "\nInstalling Base Packages...\n"
+# INSTALLING BASE SYSTEM :
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+clear
+Info_Print "INSTALLING BASE SYSTEM PACKAGES..."
+echo
 pacstrap -Ki /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $MICROCODE $EXTRA
+echo -e "${BGREEN}DONE"
+echo
 
-# GENERATE THE FSTAB FILE
-echo -e "\nGenerating FSTab File...\n"
+# GENERATE THE FSTAB FILE :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "GENERATING FSTAB FILE..."
+echo
+echo -e "Generating FSTab File..."
 genfstab -U /mnt >> /mnt/etc/fstab
+echo -e "${BGREEN}DONE"
+echo
+
+# ------------------------------ #
+# CHROOT CONFIG START FROM HERE  #
+# ------------------------------ #
+
+echo -e "${BBLUE}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}"
+echo -e "${BBLUE}                                                              ~~ CHROOT CONFIG ~~    ${RESET}"
+echo -e "${BBLUE}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}" 
+
+# SET TIME-ZONE :
+# ~~~~~~~~~~~~~~~
+clear
+arch-chroot /mnt ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+arch-chroot /mnt hwclock --systohc
+arch-chroot /mnt date
 
 
-
-echo "--------------------------------------"
-echo "-- Bootloader Systemd Installation  --"
-echo "--------------------------------------"
-bootctl install --esp-path /mnt/boot
-cat <<EOF > /mnt/boot/loader/entries/arch.conf
-title Arch Linux
-linux /vmlinuz-linux
-initrd /initramfs-linux.img
-options root="$IN_DEVICE"1 rw
-EOF
-
-# CHROOT INTO THE NEW ARCH LINUX INSTALLATION
-cat <<EOF > /mnt/runme
-echo "--------------------------------------"
-echo "-- Bootloader Systemd Installation  --"
-echo "--------------------------------------"
-echo hello world
-echo "$HOSTNAME" > /etc/hostname
-EOF
-chmod 0755 /mnt/runme
-arch-chroot /mnt /runme
-
+# GENERATE LOCALE :
+# ~~~~~~~~~~~~~~~~~
+clear
 arch-chroot /mnt sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
 arch-chroot /mnt locale-gen
+
+
+# SET LOCALE LANGUAGE :
+# ~~~~~~~~~~~~~~~~~~~~~
+clear
+echo "LANG=$LANGUAGE" > /mnt/etc/locale.conf
+echo "LC_COLLATE=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_ADDRESS=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_CTYPE=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_IDENTIFICATION=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_MEASUREMENT=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_MESSAGES=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_MONETARY=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_NAME=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_NUMERIC=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_PAPER=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_TELEPHONE=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_TIME=$LANGUAGE" >> /mnt/etc/locale.conf
+
+
+# SET HOST-NAME :
+# ~~~~~~~~~~~~~~~
+clear
+echo "$HOSTNAME" > /mnt/etc/hostname
+
+
+cat /mnt/etc/hostname 
+
+# SET HOSTS :
+# ~~~~~~~~~~~
+clear
+cat > /mnt/etc/hosts <<HOSTS
+127.0.0.1      localhost
+::1            localhost
+127.0.1.1      $HOSTNAME.localdomain     $HOSTNAME
+HOSTS
+
+cat /mnt/etc/hosts
+
+
+# SET ROOT PASSWORD :
+# ~~~~~~~~~~~~~~~~~~~
+clear
+echo -e "$ROOTPASSWORD\n$ROOTPASSWORD" | passwd root
+
+
+# CREATE USER ACCOUNT :
+# ~~~~~~~~~~~~~~~~~~~~~
+clear
+arch-chroot /mnt useradd -m "$USERNAME" -c "$FULLNAME"
+arch-chroot /mnt usermod -aG wheel,audio,video,optical,storage,disk,network,power,input "$USERNAME"
+echo -e "$USERPASSWORD\n$USERPASSWORD" | passwd "$USERNAME"
+arch-chroot /mnt sed -i 's/# %wheel/%wheel/g' /etc/sudoers
+
+
+# SET CONSOLE KEYMAP :
+# ~~~~~~~~~~~~~~~~~~~~
+clear
+echo "KEYMAP=$KEYMAP" > /mnt/etc/vconsole.conf
+
+
+# EYE-CANDY PACMAN :
+# ~~~~~~~~~~~~~~~~~~
+clear
+sed -i 's #Color Color ; s #ParallelDownloads ParallelDownloads ; s #\[multilib\] \[multilib\] ; /\[multilib\]/{n;s #Include Include }' /etc/pacman.conf
+sed -i '/NoProgressBar/iILoveCandy' /etc/pacman.conf
+
+
+
+# INITIALISING PACMAN KEYRINGS :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+clear
+pacman-key --init
+pacman-key --populate
+
+
+# SYNC FASTEST MIRRORS :
+# ~~~~~~~~~~~~~~~~~~~~~~
+clear
+echo -e "--save /etc/pacman.d/mirrorlist\n--country India,\n--protocol https\n--score 10\n" > /mnt/etc/xdg/reflector/reflector.conf
+reflector --save /etc/pacman.d/mirrorlist --country Sweden,Denmark --protocol https --score 10 --verbose
+
+
+
+
+
+
+
+
+
+
+
+EOF
+chmod 0755 /mnt/Config
+arch-chroot /mnt /Config
