@@ -328,16 +328,6 @@ echo
 
 
 
-arch-chroot /mnt pacman -Sy --needed --noconfirm hyprland wofi kitty thunar xed &>/dev/null
-
-
-
-
-
-
-
-
-
 
 
 # TITLE SHOW :

@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# -------------------------------------------------------- #
+# Author : Bibhuti Bhushan                                 #
+# Github : https://github.com/Bibhuti1221Bhushan/Installer #
+# -------------------------------------------------------- #
+
+# ------------------------ #
+# --- COSMETICS THINGS --- #
+# ------------------------ # 
 
 # COLOR VARIABLES :
 # ~~~~~~~~~~~~~~~~~ 
@@ -41,14 +49,14 @@ Microcode_Detector () {
 
 # SET SOME VARIABLES :
 # ~~~~~~~~~~~~~~~~~~~~
-USER_NAME="Bibhuti"                      # SET USER NAME
-FULL_NAME="Bibhuti Bhushan"              # SET FULL NAME
-USER_PASSWORD="\\"                       # SET USER PASSWORD
-ROOT_PASSWORD="\\"                       # SET ROOT PASSWORD
-HOSTNAME="iTunes"                        # SET THE HOST NAME
-TIMEZONE="Asia/Kolkata"                  # SET TIME-ZONE
-LOCALE="en_US.UTF-8"                     # SET LOCALE
-KEYBOARD="us"                            # SET KEYBOARD 
+USER_NAME="Bibhuti"				         # SET USER NAME
+FULL_NAME="Bibhuti Bhushan"		         # SET FULL NAME
+USER_PASSWORD=\\			      	     # SET USER PASSWORD
+ROOT_PASSWORD=\\			      	     # SET ROOT PASSWORD
+HOSTNAME="iTunes"			      	     # SET THE HOST NAME
+TIMEZONE="Asia/Kolkata"	    	         # SET TIME-ZONE
+LOCALE="en_US.UTF-8"			         # SET LOCALE
+KEYBOARD="us" 				      	     # SET KEYBOARD 
 
 # SET DISK VARIABLES :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -65,8 +73,6 @@ HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
 # ~~~~~~~~~~~~~~
 KERNEL="linux-lts"                       # SET KERNEL
 EXTRA="git neovim"                       # EXTRA PACKAGES LIKE EDITOR...
-MICROCODE="intel-ucode"
-
 
 # SET LOG FILE :
 # ~~~~~~~~~~~~~~
@@ -75,18 +81,212 @@ LOGFILE="Installer.log"
 # ------------------------------- #
 # --- SCRIPT START FROM HERE ---  #
 # ------------------------------- #
-# touch ~/Desktop/arch.conf
-# echo "title   Boot Manager" > ~/Desktop/arch.conf
-# echo "linux   /vmlinuz-$KERNEL" >> ~/Desktop/arch.conf
-# echo "initrd  /$MICROCODE.img" >> ~/Desktop/arch.conf
-# echo "initrd  /initramfs-$KERNEL.img" >> ~/Desktop/arch.conf
-# echo "options root=${DISK}3 rw" >> ~/Desktop/arch.conf
 
+# CLEAR TERMINAL :
+# ~~~~~~~~~~~~~~~~
+clear
 
-cat <<EOF > ~/Desktop/arch.conf
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo
+echo -ne "${BOLD}${BBLUE}
+███████╗ █████╗ ███████╗██╗   ██╗      █████╗ ██████╗  ██████╗██╗  ██╗
+██╔════╝██╔══██╗██╔════╝╚██╗ ██╔╝     ██╔══██╗██╔══██╗██╔════╝██║  ██║
+█████╗  ███████║███████╗ ╚████╔╝█████╗███████║██████╔╝██║     ███████║
+██╔══╝  ██╔══██║╚════██║  ╚██╔╝ ╚════╝██╔══██║██╔══██╗██║     ██╔══██║
+███████╗██║  ██║███████║   ██║        ██║  ██║██║  ██║╚██████╗██║  ██║
+╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+======================================================================
+${RESET}"
+
+# VERIFY BOOT MODE :
+# ~~~~~~~~~~~~~~~~~~
+if [ ! -d /sys/firmware/efi/efivars ]; then
+  Issue_Print "YOU ARE NOT BOOTED IN UEFI"
+  exit 1
+fi
+
+# SYNC TIME AND DATE : 
+# ~~~~~~~~~~~~~~~~~~~~
+Info_Print "SYNCING TIME AND DATE..."
+timedatectl set-ntp true
+sleep 3
+Done_Print "DONE - SYNCING TIME AND DATE..."
+echo
+
+# WIPE THE DISK :
+# ~~~~~~~~~~~~~~~
+Info_Print "WIPING DISK..."
+wipefs -af "$DISK" &>/dev/null
+sgdisk -Zo "$DISK" &>/dev/null
+Done_Print "DONE - WIPING DISK..."
+echo
+
+# PARTITION THE DISK :
+# ~~~~~~~~~~~~~~~~~~~~
+Info_Print "CREATING PARTITIONS..."
+parted "$DISK" -s mklabel gpt
+parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE
+parted "$DISK" -s set 1 esp on
+parted "$DISK" -s mkpart primary linux-swap $BOOT_SIZE $SWAP_SIZE
+parted "$DISK" -s mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE
+parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100%
+Done_Print "DONE - CREATING PARTITIONS..."
+echo
+
+# FORMAT THE PARTITIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "FORMATING PARTITIONS..."
+mkfs.fat -F 32 -n ESP "$DISK"1 &>/dev/null
+mkswap -L SWAP "$DISK"2 &>/dev/null
+mkfs.ext4 -L ROOT "$DISK"3 &>/dev/null
+mkfs.ext4 -L HOME "$DISK"4 &>/dev/null
+Done_Print "DONE - FORMATING PARTITIONS..."
+echo
+
+# MOUNT THE PARTITIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "MOUNTING PARTITIONS..."
+mount "$DISK"3 /mnt
+mkdir -p /mnt/boot
+mount "$DISK"1 /mnt/boot
+mkdir /mnt/home 
+mount "$DISK"4 /mnt/home
+swapon "$DISK"2
+Done_Print "DONE - MOUNTING PARTITIONS..."
+echo
+
+# MICROCODE DETECTIOR :
+# ~~~~~~~~~~~~~~~~~~~~~
+Microcode_Detector
+
+# INSTALLING BASE SYSTEM :
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "INSTALLING BASE SYSTEM PACKAGES..."
+pacstrap -K /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE $EXTRA &>/dev/null
+Done_Print "DONE - INSTALLING BASE SYSTEM PACKAGES..."
+echo
+
+# GENERATE THE FSTAB FILE :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "GENERATING FSTAB FILE..."
+genfstab -U /mnt >> /mnt/etc/fstab
+Done_Print "DONE - GENERATING FSTAB FILE..."
+echo
+
+# ------------------------------------- #
+# --- CHROOT CONFIG START FROM HERE --- #
+# ------------------------------------- #
+
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo -e "${BBLUE}${BOLD}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                              ~~ CHROOT CONFIG ~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}" 
+
+# SET TIME-ZONE :
+# ~~~~~~~~~~~~~~~
+Info_Print "SETTING TIME-ZONE..."
+arch-chroot /mnt ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+arch-chroot /mnt hwclock --systohc
+Done_Print "DONE - SETTING TIME-ZONE..."
+echo
+
+# GENERATE LOCALE :
+# ~~~~~~~~~~~~~~~~~
+Info_Print "GENERATING LOCALE..."
+arch-chroot /mnt sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
+arch-chroot /mnt locale-gen &>/dev/null
+Done_Print "DONE - GENERATING LOCALE..."
+echo
+
+# SET LOCALE UNITS :
+# ~~~~~~~~~~~~~~~~~~
+Info_Print "SETTING LOCALE UNITS..."
+echo "LANG=$LANGUAGE" > /mnt/etc/locale.conf
+echo "LC_COLLATE=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_ADDRESS=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_CTYPE=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_IDENTIFICATION=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_MEASUREMENT=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_MESSAGES=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_MONETARY=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_NAME=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_NUMERIC=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_PAPER=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_TELEPHONE=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LC_TIME=$LANGUAGE" >> /mnt/etc/locale.conf
+Done_Print "DONE - SETTING LOCALE UNITS..."
+echo
+
+# SET HOST-NAME :
+# ~~~~~~~~~~~~~~~
+Info_Print "SETTING HOST-NAME..."
+echo "$HOSTNAME" > /mnt/etc/hostname
+Done_Print "DONE - SETTING HOST-NAME..."
+echo
+
+# SET HOSTS :
+# ~~~~~~~~~~~
+Info_Print "SETTING HOSTS FILE..."
+cat > /mnt/etc/hosts <<HOSTS
+127.0.0.1      localhost
+::1            localhost
+127.0.1.1      $HOSTNAME.localdomain     $HOSTNAME
+HOSTS
+Done_Print "DONE - SETTING HOSTS FILE..."
+echo
+
+# SET BOOT LOADER :
+# ~~~~~~~~~~~~~~~~~
+Info_Print "SETTING BOOT LOADER..."
+bootctl install --esp-path=/mnt/boot/
+cat <<EOF > /mnt/boot/loader/entries/arch.conf
 title   Boot Manager
 linux   /vmlinuz-$KERNEL
 initrd  /$MICROCODE.img
 initrd  /initramfs-$KERNEL.img
 options root=${DISK}3 rw
 EOF
+Done_Print "DONE - SETTING BOOT LOADER..."
+echo
+
+
+
+
+
+
+
+
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                           ~~ INSTALLATION DONE ~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}" 
+echo
+echo
+echo
+echo -en "${BBLUE}${BOLD}REBOOTING IN 10 SEC... ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}1  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}2  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}3  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}4  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}5  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}6  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}7  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}8  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}9  ${RESET}" 
+sleep 1
+echo -en "${BBLUE}${BOLD}10  ${RESET}" 
+# reboot
+
+
