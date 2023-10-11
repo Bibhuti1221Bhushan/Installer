@@ -5,9 +5,9 @@
 # Github : https://github.com/Bibhuti1221Bhushan/Installer #
 # -------------------------------------------------------- #
 
-# ------------------------ #
-# --- COSMETICS THINGS --- #
-# ------------------------ # 
+# ---------------------------- #
+# --- SET COSMETICS THINGS --- #
+# ---------------------------- # 
 
 # COLOR VARIABLES :
 # ~~~~~~~~~~~~~~~~~ 
@@ -32,30 +32,20 @@ Issue_Print () {
     echo -e "${BOLD}${BRED}[ ${BBLUE}•${BRED} ] $1${RESET}"
 }
 
-# MICROCODE DETECT FUNCTION :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Microcode_Detector () {
-    CPU=$(grep vendor_id /proc/cpuinfo)
-    if [[ "$CPU" == *"AuthenticAMD"* ]]; then
-        MICROCODE="amd-ucode"
-    else
-        MICROCODE="intel-ucode"
-    fi
-}
+# -------------------------- #
+# --- SET SOME VARIABLES --- #
+# -------------------------- #
 
-# ----------------- #
-# --- VARIABLES --- #
-# ----------------- #
-
-# SET SOME VARIABLES :
-# ~~~~~~~~~~~~~~~~~~~~
-USER_NAME="Bibhuti"				         # SET USER NAME
-FULL_NAME="Bibhuti Bhushan"		         # SET FULL NAME
-USER_PASSWORD="\\"			      	     # SET USER PASSWORD
-ROOT_PASSWORD="\\"			      	     # SET ROOT PASSWORD
+# SET NORMAL VARIABLES :
+# ~~~~~~~~~~~~~~~~~~~~~~
+USERNAME="Bibhuti"				         # SET USER NAME
+FULLNAME="Bibhuti Bhushan"		         # SET FULL NAME
+USERPASSWORD="\\"			      	     # SET USER PASSWORD
+ROOTPASSWORD="\\"			      	     # SET ROOT PASSWORD
 HOSTNAME="iTunes"			      	     # SET THE HOST NAME
 TIMEZONE="Asia/Kolkata"	    	         # SET TIME-ZONE
 LOCALE="en_US.UTF-8"			         # SET LOCALE
+LANGUAGE="en_US.UTF-8"                   # SET LOCALE.CONF
 KEYBOARD="us" 				      	     # SET KEYBOARD 
 
 # SET DISK VARIABLES :
@@ -72,11 +62,9 @@ HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
 KERNEL="linux-lts"                       # SET KERNEL
+MICROCODE="intel-ucode"                  # SET MICROCODE
 EXTRA="git neovim"                       # EXTRA PACKAGES LIKE EDITOR...
 
-# SET LOG FILE :
-# ~~~~~~~~~~~~~~
-LOGFILE="Installer.log"
 
 # ------------------------------- #
 # --- SCRIPT START FROM HERE ---  #
@@ -86,29 +74,28 @@ LOGFILE="Installer.log"
 # ~~~~~~~~~~~~~~~~
 clear
 
-# TITLE SHOW :
-# ~~~~~~~~~~~~
-echo -ne "${BOLD}${BYELLOW}
-======================================================================
-███████╗ █████╗ ███████╗██╗   ██╗      █████╗ ██████╗  ██████╗██╗  ██╗
-██╔════╝██╔══██╗██╔════╝╚██╗ ██╔╝     ██╔══██╗██╔══██╗██╔════╝██║  ██║
-█████╗  ███████║███████╗ ╚████╔╝█████╗███████║██████╔╝██║     ███████║
-██╔══╝  ██╔══██║╚════██║  ╚██╔╝ ╚════╝██╔══██║██╔══██╗██║     ██╔══██║
-███████╗██║  ██║███████║   ██║        ██║  ██║██║  ██║╚██████╗██║  ██║
-╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
-======================================================================
-${RESET}"
-
 # VERIFY BOOT MODE :
 # ~~~~~~~~~~~~~~~~~~
 if [ ! -d /sys/firmware/efi/efivars ]; then
+  echo
   Issue_Print "YOU ARE NOT BOOTED IN UEFI"
+  echo
+  Issue_Print "EXITING..."
+  echo
+  sleep 3
   exit 1
 fi
+
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                           ~~ EASY ARCH INSTALL ~~    ${RESET}"
+echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}" 
 
 # SYNC TIME AND DATE : 
 # ~~~~~~~~~~~~~~~~~~~~
 Info_Print "SYNCING TIME AND DATE..."
+echo
 timedatectl set-ntp true
 sleep 3
 Done_Print "DONE - SYNCING TIME AND DATE..."
@@ -117,14 +104,16 @@ echo
 # WIPE THE DISK :
 # ~~~~~~~~~~~~~~~
 Info_Print "WIPING DISK..."
-wipefs -af "$DISK" &>/dev/null
-sgdisk -Zo "$DISK" &>/dev/null
+echo
+wipefs -af "$DISK"
+sgdisk -Zo "$DISK"
 Done_Print "DONE - WIPING DISK..."
 echo
 
 # PARTITION THE DISK :
 # ~~~~~~~~~~~~~~~~~~~~
 Info_Print "CREATING PARTITIONS..."
+echo
 parted "$DISK" -s mklabel gpt
 parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE
 parted "$DISK" -s set 1 esp on
@@ -137,16 +126,18 @@ echo
 # FORMAT THE PARTITIONS :
 # ~~~~~~~~~~~~~~~~~~~~~~~
 Info_Print "FORMATING PARTITIONS..."
-mkfs.fat -F 32 -n ESP "$DISK"1 &>/dev/null
-mkswap -L SWAP "$DISK"2 &>/dev/null
-mkfs.ext4 -L ROOT "$DISK"3 &>/dev/null
-mkfs.ext4 -L HOME "$DISK"4 &>/dev/null
+echo
+mkfs.fat -F 32 -n ESP "$DISK"1
+mkswap -L SWAP "$DISK"2
+mkfs.ext4 -L ROOT "$DISK"3
+mkfs.ext4 -L HOME "$DISK"4
 Done_Print "DONE - FORMATING PARTITIONS..."
 echo
 
 # MOUNT THE PARTITIONS :
 # ~~~~~~~~~~~~~~~~~~~~~~
 Info_Print "MOUNTING PARTITIONS..."
+echo
 mount "$DISK"3 /mnt
 mkdir -p /mnt/boot
 mount "$DISK"1 /mnt/boot
@@ -156,20 +147,19 @@ swapon "$DISK"2
 Done_Print "DONE - MOUNTING PARTITIONS..."
 echo
 
-# MICROCODE DETECTIOR :
-# ~~~~~~~~~~~~~~~~~~~~~
-Microcode_Detector
-
 # INSTALLING BASE SYSTEM :
 # ~~~~~~~~~~~~~~~~~~~~~~~~
+clear
 Info_Print "INSTALLING BASE SYSTEM PACKAGES..."
-pacstrap -K /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE $EXTRA &>/dev/null
+echo
+pacstrap -Ki /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE $EXTRA
 Done_Print "DONE - INSTALLING BASE SYSTEM PACKAGES..."
 echo
 
 # GENERATE THE FSTAB FILE :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
 Info_Print "GENERATING FSTAB FILE..."
+echo
 genfstab -U /mnt >> /mnt/etc/fstab
 Done_Print "DONE - GENERATING FSTAB FILE..."
 echo
@@ -186,23 +176,32 @@ echo -e "${BBLUE}${BOLD}                                                        
 
 # SET TIME-ZONE :
 # ~~~~~~~~~~~~~~~
+clear
 Info_Print "SETTING TIME-ZONE..."
+echo
 arch-chroot /mnt ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 arch-chroot /mnt hwclock --systohc
+arch-chroot /mnt date
 Done_Print "DONE - SETTING TIME-ZONE..."
 echo
+sleep 3
 
 # GENERATE LOCALE :
 # ~~~~~~~~~~~~~~~~~
+clear
 Info_Print "GENERATING LOCALE..."
+echo
 arch-chroot /mnt sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
-arch-chroot /mnt locale-gen &>/dev/null
+arch-chroot /mnt locale-gen
 Done_Print "DONE - GENERATING LOCALE..."
 echo
+sleep 3
 
 # SET LOCALE UNITS :
 # ~~~~~~~~~~~~~~~~~~
+clear
 Info_Print "SETTING LOCALE UNITS..."
+echo
 echo "LANG=$LANGUAGE" > /mnt/etc/locale.conf
 echo "LC_COLLATE=$LANGUAGE" >> /mnt/etc/locale.conf
 echo "LC_ADDRESS=$LANGUAGE" >> /mnt/etc/locale.conf
@@ -218,17 +217,23 @@ echo "LC_TELEPHONE=$LANGUAGE" >> /mnt/etc/locale.conf
 echo "LC_TIME=$LANGUAGE" >> /mnt/etc/locale.conf
 Done_Print "DONE - SETTING LOCALE UNITS..."
 echo
+sleep 3
 
 # SET HOST-NAME :
 # ~~~~~~~~~~~~~~~
+clear
 Info_Print "SETTING HOST-NAME..."
+echo
 echo "$HOSTNAME" > /mnt/etc/hostname
 Done_Print "DONE - SETTING HOST-NAME..."
 echo
+sleep 3
 
 # SET HOSTS :
 # ~~~~~~~~~~~
+clear
 Info_Print "SETTING HOSTS FILE..."
+echo
 cat > /mnt/etc/hosts <<HOSTS
 127.0.0.1      localhost
 ::1            localhost
@@ -236,81 +241,111 @@ cat > /mnt/etc/hosts <<HOSTS
 HOSTS
 Done_Print "DONE - SETTING HOSTS FILE..."
 echo
+sleep 3
 
 # SET ROOT PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
+clear
 Info_Print "SETTING ROOT PASSWORD..."
+echo
 echo -e "$ROOTPASSWORD\n$ROOTPASSWORD" | passwd root
 Done_Print "DONE - SETTING ROOT PASSWORD..."
 echo
+sleep 3
 
 # CREATE USER ACCOUNT :
 # ~~~~~~~~~~~~~~~~~~~~~
+clear
 Info_Print "CREATING USER ACCOUNT..."
+echo
 arch-chroot /mnt useradd -m "$USERNAME" -c "$FULLNAME"
 arch-chroot /mnt usermod -aG wheel,audio,video,optical,storage,disk,network,power,input "$USERNAME"
 echo -e "$USERPASSWORD\n$USERPASSWORD" | passwd "$USERNAME"
 arch-chroot /mnt sed -i 's/# %wheel/%wheel/g' /etc/sudoers
 Done_Print "DONE - CREATING USER ACCOUNT..."
 echo
+sleep 3
 
 # SET CONSOLE KEYMAP :
 # ~~~~~~~~~~~~~~~~~~~~
+clear
 Info_Print "SETTING CONSOLE KEYMAP..."
+echo
 echo "KEYMAP=$KEYBOARD" > /mnt/etc/vconsole.conf
 echo "XKBLAYOUT=$KEYBOARD" >> /mnt/etc/vconsole.conf
 Done_Print "DONE - SETTING CONSOLE KEYMAP..."
 echo
+sleep 3
 
 # MODIFYING PACMAN :
 # ~~~~~~~~~~~~~~~~~~
+clear
 Info_Print "MODIFYING PACMAN..."
+echo
 sed -i 's #Color Color ; s #ParallelDownloads ParallelDownloads ; s #\[multilib\] \[multilib\] ; /\[multilib\]/{n;s #Include Include }' /mnt/etc/pacman.conf
 sed -i '/NoProgressBar/iILoveCandy' /mnt/etc/pacman.conf
 Done_Print "DONE - MODIFYING PACMAN..."
 echo
+sleep 3
 
 # INITIALISING PACMAN KEYRINGS :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+clear
 Info_Print "INITIALISING PACMAN KEYRINGS..."
+echo
 pacman-key --init
 pacman-key --populate
 Done_Print "DONE - INITIALISING PACMAN KEYRINGS..."
 echo
+sleep 3
 
 # SYNC FASTEST MIRRORS :
 # ~~~~~~~~~~~~~~~~~~~~~~
+clear
 Info_Print "SYNCING FASTEST MIRRORS..."
+echo
 arch-chroot /mnt echo -e "--save /etc/pacman.d/mirrorlist\n--country India,\n--protocol https\n--score 10\n" > /etc/xdg/reflector/reflector.conf
 arch-chroot /mnt reflector --save /etc/pacman.d/mirrorlist --country Sweden,Denmark --protocol https --score 10 --verbose
 Done_Print "DONE - SYNCING FASTEST MIRRORS..."
 echo
+sleep 3
 
 # SET NETWORK MANAGER :
 # ~~~~~~~~~~~~~~~~~~~~~
+clear
 Info_Print "SETTING NETWORK MANAGER..."
+echo
 arch-chroot /mnt pacman -Sy --needed --noconfirm networkmanager
 arch-chroot /mnt systemctl enable NetworkManager
 Done_Print "DONE - SETTING NETWORK MANAGER..."
 echo
+sleep 3
 
 # NO WATCH-DOG :
 # ~~~~~~~~~~~~~~
+clear
 Info_Print "DISABLING WATCH-DOG LOG..."
+echo
 echo "blacklist iTCO_wdt" > /mnt/etc/modprobe.d/nowatchdog.conf
 Done_Print "DONE - DISABLING WATCH-DOG LOG..."
 echo
+sleep 3
 
 # RE-INITIALIZE INITRAMFS :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
+clear
 Info_Print "RE-INITIALISING INITRAMFS..."
+echo
 arch-chroot /mnt mkinitcpio -P
 Done_Print "DONE - RE-INITIALISING INITRAMFS..."
 echo
+sleep 3
 
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
+clear
 Info_Print "SETTING BOOT LOADER..."
+echo
 arch-chroot /mnt bootctl install
 cat <<EOF > /mnt/boot/loader/entries/arch.conf
 title   Boot Manager
@@ -321,6 +356,7 @@ options root=$DISK1 rw
 EOF
 Done_Print "DONE - SETTING BOOT LOADER..."
 echo
+sleep 3
 
 # TITLE SHOW :
 # ~~~~~~~~~~~~

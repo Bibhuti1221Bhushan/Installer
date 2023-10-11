@@ -9,35 +9,34 @@ BBLUE='\e[34m'                           # BOLD BLUE
 BRED='\e[91m'                            # BOLD RED   
 RESET='\e[0m'                            # RESET       
 BOLD='\e[1m'                             # BOLD
-       
-# TITLE SHOW :
-# ~~~~~~~~~~~~
-echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}"
-echo -e "${BBLUE}${BOLD}                                                           ~~ INSTALLATION DONE ~~    ${RESET}"
-echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}" 
+
+# PRETTY PRINT FUNCTIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print () {
+    echo -e "${BOLD}${BGREEN}[ ${BYELLOW}•${BGREEN} ] $1${RESET}"
+}
+
+Done_Print () {
+    echo -e "${BOLD}${BYELLOW}[ ${BGREEN}•${BYELLOW} ] $1${RESET}"
+}
+
+Issue_Print () {
+    echo -e "${BOLD}${BRED}[ ${BBLUE}•${BRED} ] $1${RESET}"
+}
+
+# SYNC TIME AND DATE : 
+# ~~~~~~~~~~~~~~~~~~~~
+Info_Print "SYNCING TIME AND DATE..."
+timedatectl set-ntp true
+sleep 3
+Done_Print "DONE - SYNCING TIME AND DATE..."
 echo
-echo
-echo -en "${BBLUE}${BOLD}REBOOTING IN 10 SEC... ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}1  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}2  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}3  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}4  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}5  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}6  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}7  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}8  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}9  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}10  ${RESET}" 
-reboot
 
 
+# WIPE THE DISK :
+# ~~~~~~~~~~~~~~~
+Info_Print "WIPING DISK..."
+# wipefs -af "$DISK" &>/dev/null
+# sgdisk -Zo "$DISK" &>/dev/null
+Done_Print "DONE - WIPING DISK..."
+echo
