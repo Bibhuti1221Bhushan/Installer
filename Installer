@@ -323,6 +323,23 @@ EOF
 Done_Print "DONE - SETTING BOOT LOADER..."
 echo
 
+
+
+
+
+
+arch-chroot /mnt pacman -Sy --needed --noconfirm hyprland wofi kitty thunar xed &>/dev/null
+
+
+
+
+
+
+
+
+
+
+
 # TITLE SHOW :
 # ~~~~~~~~~~~~
 echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}"
