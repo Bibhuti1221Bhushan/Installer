@@ -240,7 +240,7 @@ echo
 # SET ROOT PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
 Info_Print "SETTING ROOT PASSWORD..."
-echo "$ROOT_PASSWORD\n$ROOT_PASSWORD" | arch-chroot /mnt passwd &>/dev/null
+echo "$ROOT_PASSWORD\n$ROOT_PASSWORD" | arch-chroot /mnt passwd 
 Done_Print "DONE - SETTING ROOT PASSWORD..."
 echo
 
@@ -249,7 +249,7 @@ echo
 Info_Print "CREATING USER ACCOUNT..."
 arch-chroot /mnt useradd -m "$USER_NAME" -c "$FULL_NAME"
 arch-chroot /mnt usermod -aG wheel,audio,video,optical,storage,disk,network,power,input "$USER_NAME"
-echo "$USER_PASSWORD\n$USER_PASSWORD" | passwd "$USER_NAME" &>/dev/null
+echo "$USER_PASSWORD\n$USER_PASSWORD" | passwd "$USER_NAME" 
 arch-chroot /mnt sed -i 's/# %wheel/%wheel/g' /etc/sudoers
 Done_Print "DONE - CREATING USER ACCOUNT..."
 echo
@@ -312,13 +312,13 @@ echo
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
 Info_Print "SETTING BOOT LOADER..."
-arch-chroot /mnt bootctl install --esp-path=/boot/
+bootctl install --esp-path=/mnt/boot/
 cat <<EOF > /mnt/boot/loader/entries/arch.conf
 title   Boot Manager
 linux   /vmlinuz-$KERNEL
 initrd  /$MICROCODE.img
 initrd  /initramfs-$KERNEL.img
-options root=$DISK1 rw
+options root=${DISK}3 rw
 EOF
 Done_Print "DONE - SETTING BOOT LOADER..."
 echo
@@ -369,6 +369,6 @@ sleep 1
 echo -en "${BBLUE}${BOLD}9  ${RESET}" 
 sleep 1
 echo -en "${BBLUE}${BOLD}10  ${RESET}" 
-reboot
+# reboot
 
 
