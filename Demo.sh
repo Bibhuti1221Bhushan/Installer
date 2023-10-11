@@ -65,6 +65,8 @@ HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
 # ~~~~~~~~~~~~~~
 KERNEL="linux-lts"                       # SET KERNEL
 EXTRA="git neovim"                       # EXTRA PACKAGES LIKE EDITOR...
+MICROCODE="intel-ucode"
+
 
 # SET LOG FILE :
 # ~~~~~~~~~~~~~~
@@ -73,9 +75,18 @@ LOGFILE="Installer.log"
 # ------------------------------- #
 # --- SCRIPT START FROM HERE ---  #
 # ------------------------------- #
-touch ~/Desktop/arch.conf
-echo "title   Boot Manager" > ~/Desktop/arch.conf
-echo "linux   /vmlinuz-$KERNEL" >> ~/Desktop/arch.conf
-echo "initrd  /$MICROCODE.img" >> ~/Desktop/arch.conf
-echo "initrd  /initramfs-$KERNEL.img" >> ~/Desktop/arch.conf
-echo "options root=${DISK}3 rw" >> ~/Desktop/arch.conf
+# touch ~/Desktop/arch.conf
+# echo "title   Boot Manager" > ~/Desktop/arch.conf
+# echo "linux   /vmlinuz-$KERNEL" >> ~/Desktop/arch.conf
+# echo "initrd  /$MICROCODE.img" >> ~/Desktop/arch.conf
+# echo "initrd  /initramfs-$KERNEL.img" >> ~/Desktop/arch.conf
+# echo "options root=${DISK}3 rw" >> ~/Desktop/arch.conf
+
+
+cat <<EOF > ~/Desktop/arch.conf
+title   Boot Manager
+linux   /vmlinuz-$KERNEL
+initrd  /$MICROCODE.img
+initrd  /initramfs-$KERNEL.img
+options root=${DISK}3 rw
+EOF

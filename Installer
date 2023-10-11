@@ -240,16 +240,16 @@ echo
 # SET ROOT PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
 Info_Print "SETTING ROOT PASSWORD..."
-echo "$ROOT_PASSWORD\n$ROOT_PASSWORD" | arch-chroot /mnt passwd 
+echo "${ROOT_PASSWORD}\n${ROOT_PASSWORD}" | arch-chroot /mnt passwd 
 Done_Print "DONE - SETTING ROOT PASSWORD..."
 echo
 
 # CREATE USER ACCOUNT :
 # ~~~~~~~~~~~~~~~~~~~~~
 Info_Print "CREATING USER ACCOUNT..."
-arch-chroot /mnt useradd -m "$USER_NAME" -c "$FULL_NAME"
-arch-chroot /mnt usermod -aG wheel,audio,video,optical,storage,disk,network,power,input "$USER_NAME"
-echo "$USER_PASSWORD\n$USER_PASSWORD" | passwd "$USER_NAME" 
+arch-chroot /mnt useradd -m $USER_NAME -c $FULL_NAME
+arch-chroot /mnt usermod -aG wheel,audio,video,optical,storage,disk,network,power,input $USER_NAME
+echo "${USER_PASSWORD}\n${USER_PASSWORD}" | passwd $USER_NAME 
 arch-chroot /mnt sed -i 's/# %wheel/%wheel/g' /etc/sudoers
 Done_Print "DONE - CREATING USER ACCOUNT..."
 echo
