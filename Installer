@@ -47,17 +47,6 @@ Microcode_Detector () {
 # --- VARIABLES --- #
 # ----------------- #
 
-# SET SOME VARIABLES :
-# ~~~~~~~~~~~~~~~~~~~~
-USER_NAME="Bibhuti"				         # SET USER NAME
-FULL_NAME="Bibhuti Bhushan"		         # SET FULL NAME
-USER_PASSWORD="\\"			      	     # SET USER PASSWORD
-ROOT_PASSWORD="\\"			      	     # SET ROOT PASSWORD
-HOSTNAME="iTunes"			      	     # SET THE HOST NAME
-TIMEZONE="Asia/Kolkata"	    	         # SET TIME-ZONE
-LOCALE="en_US.UTF-8"			         # SET LOCALE
-KEYBOARD="us" 				      	     # SET KEYBOARD 
-
 # SET DISK VARIABLES :
 # ~~~~~~~~~~~~~~~~~~~~
 DISK=/dev/sda                            # SET DISK FOR INSTALL
@@ -72,7 +61,6 @@ HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
 KERNEL="linux-lts"                       # SET KERNEL
-EXTRA="git neovim"                       # EXTRA PACKAGES LIKE EDITOR...
 
 # SET LOG FILE :
 # ~~~~~~~~~~~~~~
@@ -163,7 +151,7 @@ Microcode_Detector
 # INSTALLING BASE SYSTEM :
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 Info_Print "INSTALLING BASE SYSTEM PACKAGES..."
-pacstrap -K /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE $EXTRA &>/dev/null
+pacstrap -K /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE &>/dev/null
 Done_Print "DONE - INSTALLING BASE SYSTEM PACKAGES..."
 echo
 
@@ -174,62 +162,143 @@ genfstab -U /mnt >> /mnt/etc/fstab
 Done_Print "DONE - GENERATING FSTAB FILE..."
 echo
 
-# ------------------------------------- #
+# CREATING CHROOT CONFIG SCRIPT :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sed '1,/^# --- CHROOT CONFIG START FROM HERE --- #$/d' `basename $0` > /mnt/Chroot-Install.sh
+chmod +x /mnt/Chroot-Install.sh
+arch-chroot /mnt ./Chroot-Install.sh
+exit 
+
+
 # --- CHROOT CONFIG START FROM HERE --- #
-# ------------------------------------- #
+#!/bin/bash
+
+# ------------------------ #
+# --- COSMETICS THINGS --- #
+# ------------------------ # 
+
+# COLOR VARIABLES :
+# ~~~~~~~~~~~~~~~~~ 
+BYELLOW='\e[93m'                         # BOLD YELLOW    
+BGREEN='\e[92m'                          # BOLD GREEN    
+BBLUE='\e[34m'                           # BOLD BLUE      
+BRED='\e[91m'                            # BOLD RED   
+RESET='\e[0m'                            # RESET       
+BOLD='\e[1m'                             # BOLD
+       
+# PRETTY PRINT FUNCTIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print () {
+    echo -e "${BOLD}${BYELLOW}[ ${BGREEN}•${BYELLOW} ] $1${RESET}"
+}
+
+Done_Print () {
+    echo -e "${BOLD}${BGREEN}[ ${BYELLOW}•${BGREEN} ] $1${RESET}"
+}
+
+Issue_Print () {
+    echo -e "${BOLD}${BRED}[ ${BBLUE}•${BRED} ] $1${RESET}"
+}
+
+# MICROCODE DETECT FUNCTION :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Microcode_Detector () {
+    CPU=$(grep vendor_id /proc/cpuinfo)
+    if [[ "$CPU" == *"AuthenticAMD"* ]]; then
+        MICROCODE="amd-ucode"
+    else
+        MICROCODE="intel-ucode"
+    fi
+}
+
+# ----------------- #
+# --- VARIABLES --- #
+# ----------------- #
+
+# SET SOME VARIABLES :
+# ~~~~~~~~~~~~~~~~~~~~
+USER_NAME="Bibhuti"				         # SET USER NAME
+FULL_NAME="Bibhuti Bhushan"		         # SET FULL NAME
+USER_PASSWORD="\\\\"			      	     # SET USER PASSWORD
+ROOT_PASSWORD="\\\\"			      	     # SET ROOT PASSWORD
+HOSTNAME="iTunes"			      	     # SET THE HOST NAME
+TIMEZONE="Asia/Kolkata"	    	         # SET TIME-ZONE
+LOCALE="en_US.UTF-8"			         # SET LOCALE
+KEYBOARD="us" 				      	     # SET KEYBOARD 
+
+# SET DISK VARIABLES :
+# ~~~~~~~~~~~~~~~~~~~~
+DISK=/dev/sda                            # SET DISK FOR INSTALL
+
+# SET PACKAGES :
+# ~~~~~~~~~~~~~~
+KERNEL="linux-lts"                       # SET KERNEL
+SHELL="zsh"                              # SET SHELL FOR USER
+EXTRA="git neovim"                       # EXTRA PACKAGES LIKE EDITOR...
+
+# SET LOG FILE :
+# ~~~~~~~~~~~~~~
+LOGFILE="Installer.log"
 
 # TITLE SHOW :
 # ~~~~~~~~~~~~
-echo -e "${BBLUE}${BOLD}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}"
-echo -e "${BBLUE}${BOLD}                                                              ~~ CHROOT CONFIG ~~    ${RESET}"
-echo -e "${BBLUE}${BOLD}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}" 
+echo
+echo -ne "${BOLD}${BBLUE}
+ █████╗ ██████╗  █████╗ ██╗  ██╗       █████╗ ██╗  ██╗██████╗  █████╗  █████╗ ████████╗
+██╔══██╗██╔══██╗██╔══██╗██║  ██║      ██╔══██╗██║  ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝
+███████║██████╔╝██║  ╚═╝███████║█████╗██║  ╚═╝███████║██████╔╝██║  ██║██║  ██║   ██║   
+██╔══██║██╔══██╗██║  ██╗██╔══██║╚════╝██║  ██╗██╔══██║██╔══██╗██║  ██║██║  ██║   ██║   
+██║  ██║██║  ██║╚█████╔╝██║  ██║      ╚█████╔╝██║  ██║██║  ██║╚█████╔╝╚█████╔╝   ██║   
+╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝ ╚═╝  ╚═╝       ╚════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝  ╚════╝    ╚═╝   
+======================================================================
+${RESET}"
 
 # SET TIME-ZONE :
 # ~~~~~~~~~~~~~~~
 Info_Print "SETTING TIME-ZONE..."
-arch-chroot /mnt ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
-arch-chroot /mnt hwclock --systohc
+ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+hwclock --systohc
 Done_Print "DONE - SETTING TIME-ZONE..."
 echo
 
 # GENERATE LOCALE :
 # ~~~~~~~~~~~~~~~~~
 Info_Print "GENERATING LOCALE..."
-arch-chroot /mnt sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
-arch-chroot /mnt locale-gen &>/dev/null
+sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
+locale-gen &>/dev/null
 Done_Print "DONE - GENERATING LOCALE..."
 echo
 
 # SET LOCALE UNITS :
 # ~~~~~~~~~~~~~~~~~~
 Info_Print "SETTING LOCALE UNITS..."
-echo "LANG=$LANGUAGE" > /mnt/etc/locale.conf
-echo "LC_COLLATE=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_ADDRESS=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_CTYPE=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_IDENTIFICATION=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_MEASUREMENT=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_MESSAGES=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_MONETARY=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_NAME=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_NUMERIC=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_PAPER=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_TELEPHONE=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_TIME=$LANGUAGE" >> /mnt/etc/locale.conf
+echo "LANG=$ LOCALE" > /etc/locale.conf
+echo "LC_COLLATE=$ LOCALE" >> /etc/locale.conf
+echo "LC_ADDRESS=$ LOCALE" >> /etc/locale.conf
+echo "LC_CTYPE=$ LOCALE" >> /etc/locale.conf
+echo "LC_IDENTIFICATION=$ LOCALE" >> /etc/locale.conf
+echo "LC_MEASUREMENT=$ LOCALE" >> /etc/locale.conf
+echo "LC_MESSAGES=$ LOCALE" >> /etc/locale.conf
+echo "LC_MONETARY=$ LOCALE" >> /etc/locale.conf
+echo "LC_NAME=$ LOCALE" >> /etc/locale.conf
+echo "LC_NUMERIC=$ LOCALE" >> /etc/locale.conf
+echo "LC_PAPER=$ LOCALE" >> /etc/locale.conf
+echo "LC_TELEPHONE=$ LOCALE" >> /etc/locale.conf
+echo "LC_TIME=$ LOCALE" >> /etc/locale.conf
 Done_Print "DONE - SETTING LOCALE UNITS..."
 echo
 
 # SET HOST-NAME :
 # ~~~~~~~~~~~~~~~
 Info_Print "SETTING HOST-NAME..."
-echo "$HOSTNAME" > /mnt/etc/hostname
+echo "$HOSTNAME" > /etc/hostname
 Done_Print "DONE - SETTING HOST-NAME..."
 echo
 
 # SET HOSTS :
 # ~~~~~~~~~~~
 Info_Print "SETTING HOSTS FILE..."
-cat > /mnt/etc/hosts <<HOSTS
+cat > /etc/hosts <<HOSTS
 127.0.0.1      localhost
 ::1            localhost
 127.0.1.1      $HOSTNAME.localdomain     $HOSTNAME
@@ -237,36 +306,19 @@ HOSTS
 Done_Print "DONE - SETTING HOSTS FILE..."
 echo
 
-# SET ROOT PASSWORD :
-# ~~~~~~~~~~~~~~~~~~~
-Info_Print "SETTING ROOT PASSWORD..."
-echo "${ROOT_PASSWORD}\n${ROOT_PASSWORD}" | arch-chroot /mnt passwd 
-Done_Print "DONE - SETTING ROOT PASSWORD..."
-echo
-
-# CREATE USER ACCOUNT :
-# ~~~~~~~~~~~~~~~~~~~~~
-Info_Print "CREATING USER ACCOUNT..."
-arch-chroot /mnt useradd -m $USER_NAME -c $FULL_NAME
-arch-chroot /mnt usermod -aG wheel,audio,video,optical,storage,disk,network,power,input $USER_NAME
-echo "${USER_PASSWORD}\n${USER_PASSWORD}" | passwd $USER_NAME 
-arch-chroot /mnt sed -i 's/# %wheel/%wheel/g' /etc/sudoers
-Done_Print "DONE - CREATING USER ACCOUNT..."
-echo
-
 # SET CONSOLE KEYMAP :
 # ~~~~~~~~~~~~~~~~~~~~
 Info_Print "SETTING CONSOLE KEYMAP..."
-echo "KEYMAP=$KEYBOARD" > /mnt/etc/vconsole.conf
-echo "XKBLAYOUT=$KEYBOARD" >> /mnt/etc/vconsole.conf
+echo "KEYMAP=$KEYBOARD" > /etc/vconsole.conf
+echo "XKBLAYOUT=$KEYBOARD" >> /etc/vconsole.conf
 Done_Print "DONE - SETTING CONSOLE KEYMAP..."
 echo
 
 # MODIFYING PACMAN :
 # ~~~~~~~~~~~~~~~~~~
 Info_Print "MODIFYING PACMAN..."
-arch-chroot /mnt sed -i 's #Color Color ; s #ParallelDownloads ParallelDownloads ; s #\[multilib\] \[multilib\] ; /\[multilib\]/{n;s #Include Include }' /etc/pacman.conf
-arch-chroot /mnt sed -i '/NoProgressBar/iILoveCandy' /etc/pacman.conf
+sed -i 's #Color Color ; s #ParallelDownloads ParallelDownloads ; s #\[multilib\] \[multilib\] ; /\[multilib\]/{n;s #Include Include }' /etc/pacman.conf
+sed -i '/NoProgressBar/iILoveCandy' /etc/pacman.conf
 Done_Print "DONE - MODIFYING PACMAN..."
 echo
 
@@ -281,39 +333,43 @@ echo
 # SYNC FASTEST MIRRORS :
 # ~~~~~~~~~~~~~~~~~~~~~~
 Info_Print "SYNCING FASTEST MIRRORS..."
-arch-chroot /mnt pacman -Sy --needed --noconfirm reflector &>/dev/null
-arch-chroot /mnt echo -e "--save /etc/pacman.d/mirrorlist\n--country India,\n--protocol https\n--score 10\n" > /etc/xdg/reflector/reflector.conf
-arch-chroot /mnt reflector --save /etc/pacman.d/mirrorlist --country Sweden,Denmark --protocol https --score 10 --verbose &>/dev/null
+pacman -Sy --needed --noconfirm reflector &>/dev/null
+echo -e "--save /etc/pacman.d/mirrorlist\n--country India,\n--protocol https\n--score 10\n" > /etc/xdg/reflector/reflector.conf
+reflector --save /etc/pacman.d/mirrorlist --country Sweden,Denmark --protocol https --score 10 --verbose &>/dev/null
 Done_Print "DONE - SYNCING FASTEST MIRRORS..."
 echo
 
 # SET NETWORK MANAGER :
 # ~~~~~~~~~~~~~~~~~~~~~
 Info_Print "SETTING NETWORK MANAGER..."
-arch-chroot /mnt pacman -Sy --needed --noconfirm networkmanager &>/dev/null
-arch-chroot /mnt systemctl enable NetworkManager
+pacman -S --needed --noconfirm networkmanager &>/dev/null
+systemctl enable NetworkManager
 Done_Print "DONE - SETTING NETWORK MANAGER..."
 echo
 
 # NO WATCH-DOG :
 # ~~~~~~~~~~~~~~
 Info_Print "DISABLING WATCH-DOG LOG..."
-echo "blacklist iTCO_wdt" > /mnt/etc/modprobe.d/nowatchdog.conf
+echo "blacklist iTCO_wdt" > /etc/modprobe.d/nowatchdog.conf
 Done_Print "DONE - DISABLING WATCH-DOG LOG..."
 echo
 
 # RE-INITIALIZE INITRAMFS :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
 Info_Print "RE-INITIALISING INITRAMFS..."
-arch-chroot /mnt mkinitcpio -P &>/dev/null
+mkinitcpio -P &>/dev/null
 Done_Print "DONE - RE-INITIALISING INITRAMFS..."
 echo
+
+# MICROCODE DETECTIOR :
+# ~~~~~~~~~~~~~~~~~~~~~
+Microcode_Detector
 
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
 Info_Print "SETTING BOOT LOADER..."
-bootctl install --esp-path=/mnt/boot/
-cat <<EOF > /mnt/boot/loader/entries/arch.conf
+bootctl install --esp-path=/boot/
+cat <<EOF > /boot/loader/entries/arch.conf
 title   Boot Manager
 linux   /vmlinuz-$KERNEL
 initrd  /$MICROCODE.img
@@ -323,42 +379,61 @@ EOF
 Done_Print "DONE - SETTING BOOT LOADER..."
 echo
 
+# INSTALL PACKAGES :
+# ~~~~~~~~~~~~~~~~~~
+pacman -S --needed --noconfirm $SHELL $EXTRA &>/dev/null
 
+# SET ROOT PASSWORD :
+# ~~~~~~~~~~~~~~~~~~~
+Info_Print "SETTING ROOT PASSWORD..."
+echo "${ROOT_PASSWORD}\n${ROOT_PASSWORD}" | passwd 
+Done_Print "DONE - SETTING ROOT PASSWORD..."
+echo
 
-
-
-
-
+# CREATE USER ACCOUNT :
+# ~~~~~~~~~~~~~~~~~~~~~
+Info_Print "CREATING USER ACCOUNT..."
+useradd -G wheel,audio,video,optical,storage,disk,network,power,input -s /bin/$SHELL -m $USER_NAME -c $FULL_NAME
+echo "${USER_PASSWORD}\n${USER_PASSWORD}" | passwd $USER_NAME 
+sed -i 's/# %wheel/%wheel/g' /etc/sudoers
+Done_Print "DONE - CREATING USER ACCOUNT..."
+echo
 
 # TITLE SHOW :
 # ~~~~~~~~~~~~
-echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}"
-echo -e "${BBLUE}${BOLD}                                                           ~~ INSTALLATION DONE ~~    ${RESET}"
-echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}" 
+echo
+echo -ne "${BOLD}${BBLUE}
+██╗███╗  ██╗ ██████╗████████╗ █████╗ ██╗     ██╗      █████╗ ████████╗██╗ █████╗ ███╗  ██╗      ██████╗  █████╗ ███╗  ██╗███████╗
+██║████╗ ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     ██╔══██╗╚══██╔══╝██║██╔══██╗████╗ ██║      ██╔══██╗██╔══██╗████╗ ██║██╔════╝
+██║██╔██╗██║╚█████╗    ██║   ███████║██║     ██║     ███████║   ██║   ██║██║  ██║██╔██╗██║      ██║  ██║██║  ██║██╔██╗██║█████╗  
+██║██║╚████║ ╚═══██╗   ██║   ██╔══██║██║     ██║     ██╔══██║   ██║   ██║██║  ██║██║╚████║      ██║  ██║██║  ██║██║╚████║██╔══╝  
+██║██║ ╚███║██████╔╝   ██║   ██║  ██║███████╗███████╗██║  ██║   ██║   ██║╚█████╔╝██║ ╚███║      ██████╔╝╚█████╔╝██║ ╚███║███████╗
+╚═╝╚═╝  ╚══╝╚═════╝    ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚════╝ ╚═╝  ╚══╝      ╚═════╝  ╚════╝ ╚═╝  ╚══╝╚══════╝
+======================================================================
+${RESET}"
 echo
 echo
 echo
-echo -en "${BBLUE}${BOLD}REBOOTING IN 10 SEC... ${RESET}" 
+Issue_Print "REBOOTING IN 10 SEC... " 
 sleep 1
-echo -en "${BBLUE}${BOLD}1  ${RESET}" 
+Info_Print "1 " 
 sleep 1
-echo -en "${BBLUE}${BOLD}2  ${RESET}" 
+Info_Print "2 " 
 sleep 1
-echo -en "${BBLUE}${BOLD}3  ${RESET}" 
+Info_Print "3 " 
 sleep 1
-echo -en "${BBLUE}${BOLD}4  ${RESET}" 
+Info_Print "4 " 
 sleep 1
-echo -en "${BBLUE}${BOLD}5  ${RESET}" 
+Info_Print "5 " 
 sleep 1
-echo -en "${BBLUE}${BOLD}6  ${RESET}" 
+Info_Print "6 " 
 sleep 1
-echo -en "${BBLUE}${BOLD}7  ${RESET}" 
+Info_Print "7 " 
 sleep 1
-echo -en "${BBLUE}${BOLD}8  ${RESET}" 
+Info_Print "8 " 
 sleep 1
-echo -en "${BBLUE}${BOLD}9  ${RESET}" 
+Info_Print "9 " 
 sleep 1
-echo -en "${BBLUE}${BOLD}10  ${RESET}" 
+Info_Print "10 " 
 # reboot
-
 
