@@ -1,225 +1,178 @@
-### Check of reflector is done
+#!/bin/bash
+
+# -------------------------------------------------------- #
+# Author : Bibhuti Bhushan                                 #
+# Github : https://github.com/Bibhuti1221Bhushan/Installer #
+# -------------------------------------------------------- #
+
+# ------------------------ #
+# --- COSMETICS THINGS --- #
+# ------------------------ # 
+
+# COLOR VARIABLES :
+# ~~~~~~~~~~~~~~~~~ 
+BYELLOW='\e[93m'                         # BOLD YELLOW    
+BGREEN='\e[92m'                          # BOLD GREEN    
+BBLUE='\e[34m'                           # BOLD BLUE      
+BRED='\e[91m'                            # BOLD RED   
+RESET='\e[0m'                            # RESET       
+BOLD='\e[1m'                             # BOLD
+       
+# PRETTY PRINT FUNCTIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print () {
+    echo -e "${BOLD}${BYELLOW}[ ${BGREEN}•${BYELLOW} ] $1${RESET}"
+}
+
+Done_Print () {
+    echo -e "${BOLD}${BGREEN}[ ${BYELLOW}•${BGREEN} ] $1${RESET}"
+}
+
+Issue_Print () {
+    echo -e "${BOLD}${BRED}[ ${BBLUE}•${BRED} ] $1${RESET}"
+}
+
+# MICROCODE DETECT FUNCTION :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Microcode_Detector () {
+    CPU=$(grep vendor_id /proc/cpuinfo)
+    if [[ "$CPU" == *"AuthenticAMD"* ]]; then
+        MICROCODE="amd-ucode"
+    else
+        MICROCODE="intel-ucode"
+    fi
+}
+
+# ----------------- #
+# --- VARIABLES --- #
+# ----------------- #
+
+# SET DISK VARIABLES :
+# ~~~~~~~~~~~~~~~~~~~~
+DISK=/dev/vda                            # SET DISK FOR INSTALL
+
+# SET SIZE OF DRIVE :
+# ~~~~~~~~~~~~~~~~~~~
+BOOT_SIZE=550MiB                         # SET BOOT PARTITION SIZE
+SWAP_SIZE=1GiB                           # SET SWAP PARTITION SIZE
+ROOT_SIZE=15GiB                          # SET ROOT PARTITION SIZE
+HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
+
+# SET PACKAGES :
+# ~~~~~~~~~~~~~~
+KERNEL="linux-lts"                       # SET KERNEL
+
+# SET LOG FILE :
+# ~~~~~~~~~~~~~~
+INSTLOG="Installer.log"
+
+# ------------------------------- #
+# --- SCRIPT START FROM HERE ---  #
+# ------------------------------- #
+
+# CLEAR TERMINAL :
+# ~~~~~~~~~~~~~~~~
 clear
-echo "Waiting until reflector has finished updating mirrorlist..."
-while true; do
-    pgrep -x reflector &>/dev/null || break
-    echo -n '.'
-    sleep 2
-done
 
-### Test internet connection
-clear
-echo "Testing internet connection..."
-$(ping -c 3 archlinux.org &>/dev/null) || (echo "Not Connected to Network!!!" && exit 1)
-echo "Good!  We're connected!!!" && sleep 3
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo
+echo -ne "${BOLD}${BBLUE}
+███████╗ █████╗ ███████╗██╗   ██╗      █████╗ ██████╗  ██████╗██╗  ██╗
+██╔════╝██╔══██╗██╔════╝╚██╗ ██╔╝     ██╔══██╗██╔══██╗██╔════╝██║  ██║
+█████╗  ███████║███████╗ ╚████╔╝█████╗███████║██████╔╝██║     ███████║
+██╔══╝  ██╔══██║╚════██║  ╚██╔╝ ╚════╝██╔══██║██╔══██╗██║     ██╔══██║
+███████╗██║  ██║███████║   ██║        ██║  ██║██║  ██║╚██████╗██║  ██║
+╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+======================================================================
+${RESET}"
 
-## Check time and date before installation
-timedatectl set-ntp true
-echo && echo "Date/Time service Status is . . . "
-timedatectl status
-sleep 4
-
-$(efi_boot_mode) && error "You have a UEFI Bios; Please use the Farchi or Darchi script for installation"
-
-####  Could just use cfdisk to partition drive
-#cfdisk "$IN_DEVICE"    # for non-EFI VM: /boot 512M; / 13G; Swap 2G; Home Remainder
-
-###  NOTE: Drive partitioning is one of those highly customizable areas where your
-###        personal preferences and needs will dictate your choices.  Many options
-###        exist here.  An MBR disklabel is very old, limited, and may well inspire
-###        you to investigate other options, which is a good exercise.  But, MBR is pretty
-###        simple and reliable, within its constraints.  Bon voyage!
-
-
-
-# Using sfdisk because we're talking MBR disktable now...
-cat > /tmp/sfdisk.cmd << EOF
-$BOOT_DEVICE : start= 2048, size=+$BOOT_SIZE, type=83, bootable
-$ROOT_DEVICE : size=+$ROOT_SIZE, type=83
-$SWAP_DEVICE : size=+$SWAP_SIZE, type=82
-$HOME_DEVICE : type=83
-EOF
-
-sfdisk "$IN_DEVICE" < /tmp/sfdisk.cmd 
-
-#####  Format filesystems
-mkfs.ext4 "$BOOT_DEVICE"    # /boot
-mkfs.ext4 "$ROOT_DEVICE"    # /
-mkswap "$SWAP_DEVICE"       # swap partition
-mkfs.ext4 "$HOME_DEVICE"    # /home
-
-#### Mount filesystems
-mount "$ROOT_DEVICE" /mnt
-mkdir /mnt/boot && mount "$BOOT_DEVICE" /mnt/boot
-swapon "$SWAP_DEVICE"
-mkdir /mnt/home && mount "$HOME_DEVICE" /mnt/home
-
-lsblk && echo "Here're your new block devices. (Type any key to continue...)" ; read empty
-
-
-###  Install base system
-clear
-echo && echo "Press any key to continue to install BASE SYSTEM..."; read empty
-pacstrap /mnt "${BASE_SYSTEM[@]}"
-echo && echo "Base system installed.  Press any key to continue..."; read empty
-
-# GENERATE FSTAB
-echo "Generating fstab..."
-genfstab -U /mnt >> /mnt/etc/fstab
-cat /mnt/etc/fstab
-echo && echo "Here's your fstab. Type any key to continue..."; read empty
-
-## SET UP TIMEZONE AND LOCALE
-clear
-echo && echo "setting timezone to $TIME_ZONE..."
-arch-chroot /mnt ln -sf /usr/share/zoneinfo/"$TIME_ZONE" /etc/localtime
-arch-chroot /mnt hwclock --systohc --utc
-arch-chroot /mnt date
-echo && echo "Here's the date info, hit any key to continue..."; read empty
-
-## SET UP LOCALE
-clear
-echo && echo "setting locale to $LOCALE ..."
-arch-chroot /mnt sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
-arch-chroot /mnt locale-gen
-echo "LANG=$LOCALE" > /mnt/etc/locale.conf
-export LANG="$LOCALE"
-cat /mnt/etc/locale.conf
-echo && echo "Here's your /mnt/etc/locale.conf. Type any key to continue."; read empty
-
-## HOSTNAME
-clear
-echo && echo "Setting hostname..."; sleep 3
-echo "$HOSTNAME" > /mnt/etc/hostname
-
-cat > /mnt/etc/hosts <<HOSTS
-127.0.0.1      localhost
-::1            localhost
-127.0.1.1      $HOSTNAME.localdomain     $HOSTNAME
-HOSTS
-
-echo && echo "/etc/hostname and /etc/hosts files configured..."
-echo "/etc/hostname . . . "
-cat /mnt/etc/hostname 
-echo "/etc/hosts . . ."
-cat /mnt/etc/hosts
-echo && echo "Here are /etc/hostname and /etc/hosts. Type any key to continue "; read empty
-
-## SET ROOT PASSWD
-clear
-echo "Setting ROOT password..."
-arch-chroot /mnt passwd
-
-## INSTALLING MORE ESSENTIALS
-clear
-echo && echo "Enabling dhcpcd, pambase, sshd and NetworkManager services..." && echo
-arch-chroot /mnt pacman -S git openssh networkmanager dhcpcd man-db man-pages pambase
-arch-chroot /mnt systemctl enable dhcpcd.service
-arch-chroot /mnt systemctl enable sshd.service
-arch-chroot /mnt systemctl enable NetworkManager.service
-arch-chroot /mnt systemctl enable systemd-homed
-echo && echo "Press any key to continue..."; read empty
-
-## ADD USER ACCT
-clear
-echo && echo "Adding sudo + user acct..."
-sleep 2
-arch-chroot /mnt pacman -S sudo bash-completion sshpass
-arch-chroot /mnt sed -i 's/# %wheel/%wheel/g' /etc/sudoers
-arch-chroot /mnt sed -i 's/%wheel ALL=(ALL) NOPASSWD: ALL/# %wheel ALL=(ALL) NOPASSWD: ALL/g' /etc/sudoers
-echo && echo "Please provide a username: "; read sudo_user
-echo && echo "Creating $sudo_user and adding $sudo_user to sudoers..."
-arch-chroot /mnt useradd -m -G wheel "$sudo_user"
-echo && echo "Password for $sudo_user?"
-arch-chroot /mnt passwd "$sudo_user"
-
-## INSTALL WIFI
-$(use_bcm4360) && arch-chroot /mnt pacman -S "$WIRELESSDRIVERS"
-[[ "$?" -eq 0 ]] && echo "Wifi Driver successfully installed!"; sleep 5
-
-## Not installing X in this script...
-
-## INSTALL GRUB
-clear
-echo "Installing grub..." && sleep 4
-arch-chroot /mnt pacman -S grub os-prober
-
-## We're not checking for EFI; We're assuming MBR
-arch-chroot /mnt grub-install "$IN_DEVICE"
-
-echo "configuring /boot/grub/grub.cfg..."
-arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg
-[[ "$?" -eq 0 ]] && echo "mbr bootloader installed..."
-
-echo "Your system is installed.  Type shutdown -h now to shutdown system and remove bootable media, then restart"
-read empty
-
-
-
-
-
-# Check if the directory exists
+# VERIFY BOOT MODE :
+# ~~~~~~~~~~~~~~~~~~
 if [ ! -d /sys/firmware/efi/efivars ]; then
-  # Give an error
-  echo "The directory /sys/firmwaress/efi/efivars does not exist."
+  Issue_Print "YOU ARE NOT BOOTED IN UEFI"
   exit 1
 fi
 
-# The directory exists, so exit successfully
-lsblk
-ls -h
+# SYNC TIME AND DATE : 
+# ~~~~~~~~~~~~~~~~~~~~
+Info_Print "SYNCING TIME AND DATE..."
+timedatectl set-ntp true
+sleep 3
+Done_Print "DONE - SYNCING TIME AND DATE..."
+echo
+
+# WIPE THE DISK :
+# ~~~~~~~~~~~~~~~
+Info_Print "WIPING DISK..."
+wipefs -af "$DISK" &>> $INSTLOG
+sgdisk -Zo "$DISK" &>> $INSTLOG
+Done_Print "DONE - WIPING DISK..."
+echo
+
+# PARTITION THE DISK :
+# ~~~~~~~~~~~~~~~~~~~~
+Info_Print "CREATING PARTITIONS..."
+parted "$DISK" -s mklabel gpt
+parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE
+parted "$DISK" -s set 1 esp on
+parted "$DISK" -s mkpart primary linux-swap $BOOT_SIZE $SWAP_SIZE
+parted "$DISK" -s mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE
+parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100%
+Done_Print "DONE - CREATING PARTITIONS..."
+echo
+
+# FORMAT THE PARTITIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "FORMATING PARTITIONS..."
+mkfs.fat -F 32 -n ESP "$DISK"1 &>> $INSTLOG
+mkswap -L SWAP "$DISK"2 &>> $INSTLOG
+mkfs.ext4 -L ROOT "$DISK"3 &>> $INSTLOG
+mkfs.ext4 -L HOME "$DISK"4 &>> $INSTLOG
+Done_Print "DONE - FORMATING PARTITIONS..."
+echo
+
+# MOUNT THE PARTITIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "MOUNTING PARTITIONS..."
+mount "$DISK"3 /mnt
+mkdir -p /mnt/boot
+mount "$DISK"1 /mnt/boot
+mkdir /mnt/home 
+mount "$DISK"4 /mnt/home
+swapon "$DISK"2
+Done_Print "DONE - MOUNTING PARTITIONS..."
+echo
+
+# MICROCODE DETECTIOR :
+# ~~~~~~~~~~~~~~~~~~~~~
+Microcode_Detector
+
+# INSTALLING BASE SYSTEM :
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "INSTALLING BASE SYSTEM PACKAGES..."
+pacstrap -K /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE &>> $INSTLOG
+Done_Print "DONE - INSTALLING BASE SYSTEM PACKAGES..."
+echo
+
+# GENERATE THE FSTAB FILE :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "GENERATING FSTAB FILE..."
+genfstab -U /mnt >> /mnt/etc/fstab
+Done_Print "DONE - GENERATING FSTAB FILE..."
+echo
 
 
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo
+echo -ne "${BOLD}${BBLUE}
+ █████╗ ██████╗  █████╗ ██╗  ██╗       █████╗ ██╗  ██╗██████╗  █████╗  █████╗ ████████╗
+██╔══██╗██╔══██╗██╔══██╗██║  ██║      ██╔══██╗██║  ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝
+███████║██████╔╝██║  ╚═╝███████║█████╗██║  ╚═╝███████║██████╔╝██║  ██║██║  ██║   ██║   
+██╔══██║██╔══██╗██║  ██╗██╔══██║╚════╝██║  ██╗██╔══██║██╔══██╗██║  ██║██║  ██║   ██║   
+██║  ██║██║  ██║╚█████╔╝██║  ██║      ╚█████╔╝██║  ██║██║  ██║╚█████╔╝╚█████╔╝   ██║   
+╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝ ╚═╝  ╚═╝       ╚════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝  ╚════╝    ╚═╝   
+======================================================================
+${RESET}"
 
-echo "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-echo -e "\nModifying Pacman Configuration...\n"
-
-# enable options "color", "ParallelDownloads", "multilib (32-bit) repository"
-sed -i 's #Color Color ; s #ParallelDownloads ParallelDownloads ; s #\[multilib\] \[multilib\] ; /\[multilib\]/{n;s #Include Include }' /etc/pacman.conf
-
-echo -e "\nDone.\n\n"
-
-
-
-echo "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-echo -e "\nPerforming Initialization of Pacman Keyring...\n"
-
-pacman-key --init
-
-pacman-key --populate archlinux
-
-echo -e "\nDone.\n\n"
-
-
-echo "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-echo -e "\nAdding Fastest Mirror in Pacman Mirrorlist...\n"
-
-# save preferred configuration for the reflector systemd service
-echo -e "--save /etc/pacman.d/mirrorlist\n--country Sweden,Denmark\n--protocol https\n--score 10\n" > /etc/xdg/reflector/reflector.conf
-
-reflector --save /etc/pacman.d/mirrorlist --country Sweden,Denmark --protocol https --score 10 --verbose
-
-echo -e "\nDone.\n\n"
-
-
-
-
-echo "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------"
-echo -e "\nPerforming Pacstrap Operation...\n"
-
-# edit and adjust the "pkgs" file for desired packages (don't worry about any extra white spaces or new lines or comments as they will be omitted using sed and tr)
-pacstrap /mnt $(cat pkgs | sed 's #.*$  g' | tr '\n' ' ')
-
-echo -e "\nDone.\n\n"
-
-
-echo "--------------------------------------"
-echo "-- Bootloader Systemd Installation  --"
-echo "--------------------------------------"
-bootctl install --esp-path /mnt/boot
-cat <<EOF > /mnt/boot/loader/entries/arch.conf
-title Arch Linux
-linux /vmlinuz-linux
-initrd /initramfs-linux.img
-options root="$IN_DEVICE"1 rw
-EOF
