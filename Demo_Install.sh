@@ -151,7 +151,7 @@ Microcode_Detector
 # INSTALLING BASE SYSTEM :
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 Info_Print "INSTALLING BASE SYSTEM PACKAGES..."
-pacstrap -K /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE &>> $INSTLOG
+pacstrap -K /mnt --noconfirm --needed base sudo linux-firmware $KERNEL $MICROCODE &>> $INSTLOG
 Done_Print "DONE - INSTALLING BASE SYSTEM PACKAGES..."
 echo
 
