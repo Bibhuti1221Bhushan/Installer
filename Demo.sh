@@ -5,31 +5,60 @@
 # Github : https://github.com/Bibhuti1221Bhushan/Installer #
 # -------------------------------------------------------- #
 
-# ------------------------ #
-# --- COSMETICS THINGS --- #
-# ------------------------ # 
+# SET DISK VARIABLES :
+# ~~~~~~~~~~~~~~~~~~~~
+DISK=/dev/sda                            # SET DISK FOR INSTALLATION
+
+# SET SIZE OF DRIVE :
+# ~~~~~~~~~~~~~~~~~~~
+BOOT_SIZE=550MiB                         # SET BOOT PARTITION SIZE
+SWAP_SIZE=8GiB                           # SET SWAP PARTITION SIZE
+ROOT_SIZE=35GiB                          # SET ROOT PARTITION SIZE
+HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
+
+# SET PACKAGES :
+# ~~~~~~~~~~~~~~
+KERNEL="linux-lts"                       # SET KERNEL
+
+# SET LOG FILE :
+# ~~~~~~~~~~~~~~
+LOGFILE="Installer.log"
+
+# ---------------------------------------------------------- #
+# -------------------- COSMETICS THINGS -------------------- #
+# ---------------------------------------------------------- #
 
 # COLOR VARIABLES :
 # ~~~~~~~~~~~~~~~~~ 
-BYELLOW='\e[93m'                         # BOLD YELLOW    
-BGREEN='\e[92m'                          # BOLD GREEN    
-BBLUE='\e[34m'                           # BOLD BLUE      
-BRED='\e[91m'                            # BOLD RED   
-RESET='\e[0m'                            # RESET       
+YELLOW='\e[93m'                          # YELLOW
+GREEN='\e[92m'                           # GREEN
+BLUE='\e[34m'                            # BLUE
+RED='\e[91m'                             # RED
+RESET='\e[0m'                            # RESET
 BOLD='\e[1m'                             # BOLD
-       
+
 # PRETTY PRINT FUNCTIONS :
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 Info_Print () {
-    echo -e "${BOLD}${BYELLOW}[ ${BGREEN}•${BYELLOW} ] $1${RESET}"
+    echo -e "${BOLD}${YELLOW}! ${GREEN}NOTE${YELLOW} ! - $1${RESET}"
 }
 
 Done_Print () {
-    echo -e "${BOLD}${BGREEN}[ ${BYELLOW}•${BGREEN} ] $1${RESET}"
+    echo -e "${BOLD}${GREEN}! ${YELLOW}DONE${GREEN} ! - $1${RESET}"
 }
 
-Issue_Print () {
-    echo -e "${BOLD}${BRED}[ ${BBLUE}•${BRED} ] $1${RESET}"
+Warn_Print () {
+    echo -e "${BOLD}${RED}! ${BLUE}WARN${RED} ! - $1${RESET}"
+}
+
+# SHOW PROGRESS FUNCTION :
+# ~~~~~~~~~~~~~~~~~~~~~~~~
+Show_Progress() {
+    while ps | grep $1 &> /dev/null;
+    do
+        echo -e "${BOLD}${GREEN} . ${RESET}"
+        sleep 1
+    done
 }
 
 # MICROCODE DETECT FUNCTION :
@@ -42,387 +71,42 @@ Microcode_Detector () {
         MICROCODE="intel-ucode"
     fi
 }
+Warn_Print "WORKING..."
+Done_Print "WORKING..."
+Info_Print "WORKING..."
 
-# ----------------- #
-# --- VARIABLES --- #
-# ----------------- #
+echo -e "${BOLD}${GREEN} . . . . WARN${RESET}"
 
-# SET DISK VARIABLES :
-# ~~~~~~~~~~~~~~~~~~~~
-DISK=/dev/sda                            # SET DISK FOR INSTALL
 
-# SET SIZE OF DRIVE :
-# ~~~~~~~~~~~~~~~~~~~
-BOOT_SIZE=550MiB                         # SET BOOT PARTITION SIZE
-SWAP_SIZE=8GiB                           # SET SWAP PARTITION SIZE
-ROOT_SIZE=35GiB                          # SET ROOT PARTITION SIZE
-HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
+Center_Print() {
+  # Calculate the number of spaces to print before the text.
+  spaces=$((($(tput cols) - $1) / 2))
+  # Print the spaces.
+  printf "%${spaces}s"
+  # Print the text.
+  echo -e "${BOLD}${BBLUE}$1${RESET}"
+  # Print the remaining spaces.
+  printf "%${spaces}s"
+}
 
-# SET PACKAGES :
-# ~~~~~~~~~~~~~~
-KERNEL="linux-lts"                       # SET KERNEL
-EXTRA="git neovim"                       # EXTRA PACKAGES LIKE EDITOR...
 
-# SET LOG FILE :
-# ~~~~~~~~~~~~~~
-LOGFILE="Installer.log"
+Center_Print "Helloooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo"
 
-# ------------------------------- #
-# --- SCRIPT START FROM HERE ---  #
-# ------------------------------- #
-
-# CLEAR TERMINAL :
-# ~~~~~~~~~~~~~~~~
-clear
-
-# TITLE SHOW :
-# ~~~~~~~~~~~~
 echo
-echo -ne "${BOLD}${BBLUE}
-██╗███╗░░██╗░██████╗████████╗░█████╗░██╗░░░░░██╗░░░░░░█████╗░████████╗██╗░█████╗░███╗░░██╗      ██████╗░░█████╗░███╗░░██╗███████╗
-██║████╗░██║██╔════╝╚══██╔══╝██╔══██╗██║░░░░░██║░░░░░██╔══██╗╚══██╔══╝██║██╔══██╗████╗░██║      ██╔══██╗██╔══██╗████╗░██║██╔════╝
-██║██╔██╗██║╚█████╗░░░░██║░░░███████║██║░░░░░██║░░░░░███████║░░░██║░░░██║██║░░██║██╔██╗██║      ██║░░██║██║░░██║██╔██╗██║█████╗░░
-██║██║╚████║░╚═══██╗░░░██║░░░██╔══██║██║░░░░░██║░░░░░██╔══██║░░░██║░░░██║██║░░██║██║╚████║      ██║░░██║██║░░██║██║╚████║██╔══╝░░
-██║██║░╚███║██████╔╝░░░██║░░░██║░░██║███████╗███████╗██║░░██║░░░██║░░░██║╚█████╔╝██║░╚███║      ██████╔╝╚█████╔╝██║░╚███║███████╗
-╚═╝╚═╝░░╚══╝╚═════╝░░░░╚═╝░░░╚═╝░░╚═╝╚══════╝╚══════╝╚═╝░░╚═╝░░░╚═╝░░░╚═╝░╚════╝░╚═╝░░╚══╝      ╚═════╝░░╚════╝░╚═╝░░╚══╝╚══════╝
-======================================================================
+echo -ne "${BOLD}${BLUE}
+                    ███████╗ █████╗ ███████╗██╗   ██╗      █████╗ ██████╗  ██████╗██╗  ██╗
+                    ██╔════╝██╔══██╗██╔════╝╚██╗ ██╔╝     ██╔══██╗██╔══██╗██╔════╝██║  ██║
+                    █████╗  ███████║███████╗ ╚████╔╝█████╗███████║██████╔╝██║     ███████║
+                    ██╔══╝  ██╔══██║╚════██║  ╚██╔╝ ╚════╝██╔══██║██╔══██╗██║     ██╔══██║
+                    ███████╗██║  ██║███████║   ██║        ██║  ██║██║  ██║╚██████╗██║  ██║
+                    ╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+                    ======================================================================
 ${RESET}"
 
-# # VERIFY BOOT MODE :
-# # ~~~~~~~~~~~~~~~~~~
-# if [ ! -d /sys/firmware/efi/efivars ]; then
-#   Issue_Print "YOU ARE NOT BOOTED IN UEFI"
-#   exit 1
-# fi
 
-# # SYNC TIME AND DATE : 
-# # ~~~~~~~~~~~~~~~~~~~~
-# Info_Print "SYNCING TIME AND DATE..."
-# timedatectl set-ntp true
-# sleep 3
-# Done_Print "DONE - SYNCING TIME AND DATE..."
-# echo
-
-# # WIPE THE DISK :
-# # ~~~~~~~~~~~~~~~
-# Info_Print "WIPING DISK..."
-# wipefs -af "$DISK" &>/dev/null
-# sgdisk -Zo "$DISK" &>/dev/null
-# Done_Print "DONE - WIPING DISK..."
-# echo
-
-# # PARTITION THE DISK :
-# # ~~~~~~~~~~~~~~~~~~~~
-# Info_Print "CREATING PARTITIONS..."
-# parted "$DISK" -s mklabel gpt
-# parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE
-# parted "$DISK" -s set 1 esp on
-# parted "$DISK" -s mkpart primary linux-swap $BOOT_SIZE $SWAP_SIZE
-# parted "$DISK" -s mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE
-# parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100%
-# Done_Print "DONE - CREATING PARTITIONS..."
-# echo
-
-# # FORMAT THE PARTITIONS :
-# # ~~~~~~~~~~~~~~~~~~~~~~~
-# Info_Print "FORMATING PARTITIONS..."
-# mkfs.fat -F 32 -n ESP "$DISK"1 &>/dev/null
-# mkswap -L SWAP "$DISK"2 &>/dev/null
-# mkfs.ext4 -L ROOT "$DISK"3 &>/dev/null
-# mkfs.ext4 -L HOME "$DISK"4 &>/dev/null
-# Done_Print "DONE - FORMATING PARTITIONS..."
-# echo
-
-# # MOUNT THE PARTITIONS :
-# # ~~~~~~~~~~~~~~~~~~~~~~
-# Info_Print "MOUNTING PARTITIONS..."
-# mount "$DISK"3 /mnt
-# mkdir -p /mnt/boot
-# mount "$DISK"1 /mnt/boot
-# mkdir /mnt/home 
-# mount "$DISK"4 /mnt/home
-# swapon "$DISK"2
-# Done_Print "DONE - MOUNTING PARTITIONS..."
-# echo
-
-# # MICROCODE DETECTIOR :
-# # ~~~~~~~~~~~~~~~~~~~~~
-# Microcode_Detector
-
-# # INSTALLING BASE SYSTEM :
-# # ~~~~~~~~~~~~~~~~~~~~~~~~
-# Info_Print "INSTALLING BASE SYSTEM PACKAGES..."
-# pacstrap -K /mnt --noconfirm --needed base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE $EXTRA &>/dev/null
-# Done_Print "DONE - INSTALLING BASE SYSTEM PACKAGES..."
-# echo
-
-# # GENERATE THE FSTAB FILE :
-# # ~~~~~~~~~~~~~~~~~~~~~~~~~
-# Info_Print "GENERATING FSTAB FILE..."
-# genfstab -U /mnt >> /mnt/etc/fstab
-# Done_Print "DONE - GENERATING FSTAB FILE..."
-# echo
-
-# CREATING CHROOT CONFIG SCRIPT :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# sed '1,/^# ------------------------------------- #$/d' `basename $0` > /home/Bibhuti/Chroot-Install.sh
-# chmod +x /home/Bibhuti/Chroot-Install.sh
-# arch-chroot /mnt ./Chroot-Install.sh
-# exit 
-
-# ------------------------------------- #
-#!/bin/bash
-
-# --- CHROOT CONFIG START FROM HERE --- #
-# ------------------------------------- #
-
-# ------------------------ #
-# --- COSMETICS THINGS --- #
-# ------------------------ # 
-
-# COLOR VARIABLES :
-# ~~~~~~~~~~~~~~~~~ 
-BYELLOW='\e[93m'                         # BOLD YELLOW    
-BGREEN='\e[92m'                          # BOLD GREEN    
-BBLUE='\e[34m'                           # BOLD BLUE      
-BRED='\e[91m'                            # BOLD RED   
-RESET='\e[0m'                            # RESET       
-BOLD='\e[1m'                             # BOLD
-       
-# PRETTY PRINT FUNCTIONS :
-# ~~~~~~~~~~~~~~~~~~~~~~~~
-Info_Print () {
-    echo -e "${BOLD}${BYELLOW}[ ${BGREEN}•${BYELLOW} ] $1${RESET}"
-}
-
-Done_Print () {
-    echo -e "${BOLD}${BGREEN}[ ${BYELLOW}•${BGREEN} ] $1${RESET}"
-}
-
-Issue_Print () {
-    echo -e "${BOLD}${BRED}[ ${BBLUE}•${BRED} ] $1${RESET}"
-}
-
-# ----------------- #
-# --- VARIABLES --- #
-# ----------------- #
-
-# SET SOME VARIABLES :
-# ~~~~~~~~~~~~~~~~~~~~
-USER_NAME="Bibhuti"				         # SET USER NAME
-FULL_NAME="Bibhuti Bhushan"		         # SET FULL NAME
-USER_PASSWORD="\\"			      	     # SET USER PASSWORD
-ROOT_PASSWORD="\\"			      	     # SET ROOT PASSWORD
-HOSTNAME="iTunes"			      	     # SET THE HOST NAME
-TIMEZONE="Asia/Kolkata"	    	         # SET TIME-ZONE
-LOCALE="en_US.UTF-8"			         # SET LOCALE
-KEYBOARD="us" 				      	     # SET KEYBOARD 
-
-# SET DISK VARIABLES :
-# ~~~~~~~~~~~~~~~~~~~~
-DISK=/dev/sda                            # SET DISK FOR INSTALL
-
-# SET SIZE OF DRIVE :
-# ~~~~~~~~~~~~~~~~~~~
-BOOT_SIZE=550MiB                         # SET BOOT PARTITION SIZE
-SWAP_SIZE=8GiB                           # SET SWAP PARTITION SIZE
-ROOT_SIZE=35GiB                          # SET ROOT PARTITION SIZE
-HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
-
-# SET PACKAGES :
-# ~~~~~~~~~~~~~~
-KERNEL="linux-lts"                       # SET KERNEL
-EXTRA="git neovim"                       # EXTRA PACKAGES LIKE EDITOR...
-
-# SET LOG FILE :
-# ~~~~~~~~~~~~~~
-LOGFILE="Installer.log"
-# TITLE SHOW :
-# ~~~~~~~~~~~~
-echo -e "${BBLUE}${BOLD}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}"
-echo -e "${BBLUE}${BOLD}                                                              ~~ CHROOT CONFIG ~~    ${RESET}"
-echo -e "${BBLUE}${BOLD}                                                              ~~~~~~~~~~~~~~~~~~~    ${RESET}" 
-
-# SET TIME-ZONE :
-# ~~~~~~~~~~~~~~~
-Info_Print "SETTING TIME-ZONE..."
-arch-chroot /mnt ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
-arch-chroot /mnt hwclock --systohc
-Done_Print "DONE - SETTING TIME-ZONE..."
-echo
-
-# GENERATE LOCALE :
-# ~~~~~~~~~~~~~~~~~
-Info_Print "GENERATING LOCALE..."
-arch-chroot /mnt sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
-arch-chroot /mnt locale-gen &>/dev/null
-Done_Print "DONE - GENERATING LOCALE..."
-echo
-
-# SET LOCALE UNITS :
+# VERIFY BOOT MODE :
 # ~~~~~~~~~~~~~~~~~~
-Info_Print "SETTING LOCALE UNITS..."
-echo "LANG=$LANGUAGE" > /mnt/etc/locale.conf
-echo "LC_COLLATE=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_ADDRESS=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_CTYPE=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_IDENTIFICATION=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_MEASUREMENT=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_MESSAGES=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_MONETARY=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_NAME=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_NUMERIC=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_PAPER=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_TELEPHONE=$LANGUAGE" >> /mnt/etc/locale.conf
-echo "LC_TIME=$LANGUAGE" >> /mnt/etc/locale.conf
-Done_Print "DONE - SETTING LOCALE UNITS..."
-echo
-
-# SET HOST-NAME :
-# ~~~~~~~~~~~~~~~
-Info_Print "SETTING HOST-NAME..."
-echo "$HOSTNAME" > /mnt/etc/hostname
-Done_Print "DONE - SETTING HOST-NAME..."
-echo
-
-# SET HOSTS :
-# ~~~~~~~~~~~
-Info_Print "SETTING HOSTS FILE..."
-cat > /mnt/etc/hosts <<HOSTS
-127.0.0.1      localhost
-::1            localhost
-127.0.1.1      $HOSTNAME.localdomain     $HOSTNAME
-HOSTS
-Done_Print "DONE - SETTING HOSTS FILE..."
-echo
-
-# SET ROOT PASSWORD :
-# ~~~~~~~~~~~~~~~~~~~
-Info_Print "SETTING ROOT PASSWORD..."
-echo "${ROOT_PASSWORD}\n${ROOT_PASSWORD}" | arch-chroot /mnt passwd 
-Done_Print "DONE - SETTING ROOT PASSWORD..."
-echo
-
-# CREATE USER ACCOUNT :
-# ~~~~~~~~~~~~~~~~~~~~~
-Info_Print "CREATING USER ACCOUNT..."
-arch-chroot /mnt useradd -m $USER_NAME -c $FULL_NAME
-arch-chroot /mnt usermod -aG wheel,audio,video,optical,storage,disk,network,power,input $USER_NAME
-echo "${USER_PASSWORD}\n${USER_PASSWORD}" | passwd $USER_NAME 
-arch-chroot /mnt sed -i 's/# %wheel/%wheel/g' /etc/sudoers
-Done_Print "DONE - CREATING USER ACCOUNT..."
-echo
-
-# SET CONSOLE KEYMAP :
-# ~~~~~~~~~~~~~~~~~~~~
-Info_Print "SETTING CONSOLE KEYMAP..."
-echo "KEYMAP=$KEYBOARD" > /mnt/etc/vconsole.conf
-echo "XKBLAYOUT=$KEYBOARD" >> /mnt/etc/vconsole.conf
-Done_Print "DONE - SETTING CONSOLE KEYMAP..."
-echo
-
-# MODIFYING PACMAN :
-# ~~~~~~~~~~~~~~~~~~
-Info_Print "MODIFYING PACMAN..."
-arch-chroot /mnt sed -i 's #Color Color ; s #ParallelDownloads ParallelDownloads ; s #\[multilib\] \[multilib\] ; /\[multilib\]/{n;s #Include Include }' /etc/pacman.conf
-arch-chroot /mnt sed -i '/NoProgressBar/iILoveCandy' /etc/pacman.conf
-Done_Print "DONE - MODIFYING PACMAN..."
-echo
-
-# INITIALISING PACMAN KEYRINGS :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Info_Print "INITIALISING PACMAN KEYRINGS..."
-pacman-key --init &>/dev/null
-pacman-key --populate &>/dev/null
-Done_Print "DONE - INITIALISING PACMAN KEYRINGS..."
-echo
-
-# SYNC FASTEST MIRRORS :
-# ~~~~~~~~~~~~~~~~~~~~~~
-Info_Print "SYNCING FASTEST MIRRORS..."
-arch-chroot /mnt pacman -Sy --needed --noconfirm reflector &>/dev/null
-arch-chroot /mnt echo -e "--save /etc/pacman.d/mirrorlist\n--country India,\n--protocol https\n--score 10\n" > /etc/xdg/reflector/reflector.conf
-arch-chroot /mnt reflector --save /etc/pacman.d/mirrorlist --country Sweden,Denmark --protocol https --score 10 --verbose &>/dev/null
-Done_Print "DONE - SYNCING FASTEST MIRRORS..."
-echo
-
-# SET NETWORK MANAGER :
-# ~~~~~~~~~~~~~~~~~~~~~
-Info_Print "SETTING NETWORK MANAGER..."
-arch-chroot /mnt pacman -Sy --needed --noconfirm networkmanager &>/dev/null
-arch-chroot /mnt systemctl enable NetworkManager
-Done_Print "DONE - SETTING NETWORK MANAGER..."
-echo
-
-# NO WATCH-DOG :
-# ~~~~~~~~~~~~~~
-Info_Print "DISABLING WATCH-DOG LOG..."
-echo "blacklist iTCO_wdt" > /mnt/etc/modprobe.d/nowatchdog.conf
-Done_Print "DONE - DISABLING WATCH-DOG LOG..."
-echo
-
-# RE-INITIALIZE INITRAMFS :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~
-Info_Print "RE-INITIALISING INITRAMFS..."
-arch-chroot /mnt mkinitcpio -P &>/dev/null
-Done_Print "DONE - RE-INITIALISING INITRAMFS..."
-echo
-
-# SET BOOT LOADER :
-# ~~~~~~~~~~~~~~~~~
-Info_Print "SETTING BOOT LOADER..."
-bootctl install --esp-path=/mnt/boot/
-cat <<EOF > /mnt/boot/loader/entries/arch.conf
-title   Boot Manager
-linux   /vmlinuz-$KERNEL
-initrd  /$MICROCODE.img
-initrd  /initramfs-$KERNEL.img
-options root=${DISK}3 rw
-EOF
-Done_Print "DONE - SETTING BOOT LOADER..."
-echo
-
-
-
-
-
-
-
-
-# TITLE SHOW :
-# ~~~~~~~~~~~~
-echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}"
-echo -e "${BBLUE}${BOLD}                                                           ~~ INSTALLATION DONE ~~    ${RESET}"
-echo -e "${BBLUE}${BOLD}                                                           ~~~~~~~~~~~~~~~~~~~~~~~    ${RESET}" 
-echo
-echo
-echo
-echo -en "${BBLUE}${BOLD}REBOOTING IN 10 SEC... ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}1  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}2  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}3  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}4  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}5  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}6  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}7  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}8  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}9  ${RESET}" 
-sleep 1
-echo -en "${BBLUE}${BOLD}10  ${RESET}" 
-# reboot
-
-
-NetworkManager
-PassWord
-
-
-exit
+if [ ! -d /sys/firmwareS/efi/efivars ]; then
+  Warn_Print "YOU ARE NOT BOOTED IN UEFI."
+  exit 1
+fi
