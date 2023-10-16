@@ -1,0 +1,29 @@
+#!/bin/bash
+
+
+USERNAME="Cat"
+useradd -mG users,wheel -s /bin/bash ${USERNAME}
+
+Info_Print "PLEASE ENTER PASSWORD :  "
+read NEW_PASSWORD
+
+# cat > PassWord.Conf <<HOSTS
+# $NEW_PASSWORD
+# $NEW_PASSWORD
+# HOSTS
+
+# FILE="PassWord.Conf"
+# cat $FILE | passwd $USERNAME 
+
+
+
+
+# SET PLYMOUTH BOOT SPLASH :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "SETTING PLYMOUTH BOOT SPLASH."
+pacman -S --noconfirm plymouth
+git clone
+Done_Print "SETTING PLYMOUTH BOOT SPLASH."
+echo
+
+# systemctl enable paccache.timer &>> $LOGFILE
