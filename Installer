@@ -71,6 +71,37 @@ Microcode_Detector () {
     fi
 }
 
+# VIRTUALIZATION CHECK FUNCTION :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+VM_Check () {
+    DETECT=$(systemd-detect-virt)
+    case $DETECT in
+        kvm )       Info_Print "KVM HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
+                    pacstrap /mnt qemu-guest-agent &>> $LOGFILE
+                    systemctl enable qemu-guest-agent --root=/mnt &>> $LOGFILE
+                    Done_Print "SETTING UP KVM GUEST TOOLS."
+                    ;;
+        vmware )    Info_Print "VMWARE WORKSTATION HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
+                    pacstrap /mnt open-vm-tools &>> $LOGFILE
+                    systemctl enable vmtoolsd --root=/mnt &>> $LOGFILE
+                    systemctl enable vmware-vmblock-fuse --root=/mnt &>> $LOGFILE
+                    Done_Print "SETTING UP VMWARE GUEST TOOLS."
+                    ;;
+        oracle )    Info_Print "VIRTUALBOX HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
+                    pacstrap /mnt virtualbox-guest-utils &>> $LOGFILE
+                    systemctl enable vboxservice --root=/mnt &>> $LOGFILE
+                    Done_Print "SETTING UP VIRTUALBOX GUEST TOOLS."
+                    ;;
+        microsoft ) Info_Print "HYPER-V HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
+                    pacstrap /mnt hyperv &>> $LOGFILE
+                    systemctl enable hv_fcopy_daemon --root=/mnt &>> $LOGFILE
+                    systemctl enable hv_kvp_daemon --root=/mnt &>> $LOGFILE
+                    systemctl enable hv_vss_daemon --root=/mnt &>> $LOGFILE
+                    Done_Print "SETTING UP HYPER-V GUEST TOOLS."
+                    ;;
+    esac
+}
+
 # ---------------------------------------------------------- #
 # ----------------- SCRIPT START FROM HERE ----------------- #
 # ---------------------------------------------------------- #
@@ -83,13 +114,13 @@ clear
 # ~~~~~~~~~~~~
 echo
 echo -ne "${BOLD}${BLUE}
-                    ███████╗ █████╗ ███████╗██╗   ██╗      █████╗ ██████╗  ██████╗██╗  ██╗
-                    ██╔════╝██╔══██╗██╔════╝╚██╗ ██╔╝     ██╔══██╗██╔══██╗██╔════╝██║  ██║
-                    █████╗  ███████║███████╗ ╚████╔╝█████╗███████║██████╔╝██║     ███████║
-                    ██╔══╝  ██╔══██║╚════██║  ╚██╔╝ ╚════╝██╔══██║██╔══██╗██║     ██╔══██║
-                    ███████╗██║  ██║███████║   ██║        ██║  ██║██║  ██║╚██████╗██║  ██║
-                    ╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
-                    ======================================================================
+                                            ███████╗ █████╗ ███████╗██╗   ██╗      █████╗ ██████╗  ██████╗██╗  ██╗
+                                            ██╔════╝██╔══██╗██╔════╝╚██╗ ██╔╝     ██╔══██╗██╔══██╗██╔════╝██║  ██║
+                                            █████╗  ███████║███████╗ ╚████╔╝      ███████║██████╔╝██║     ███████║
+                                            ██╔══╝  ██╔══██║╚════██║  ╚██╔╝       ██╔══██║██╔══██╗██║     ██╔══██║
+                                            ███████╗██║  ██║███████║   ██║        ██║  ██║██║  ██║╚██████╗██║  ██║
+                                            ╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
+                                            ======================================================================
 ${RESET}"
 
 # VERIFY BOOT MODE :
@@ -193,19 +224,20 @@ echo
 
 # CLEAR TERMINAL :
 # ~~~~~~~~~~~~~~~~
+sleep 10
 clear
 
 # TITLE SHOW :
 # ~~~~~~~~~~~~
 echo
 echo -ne "${BOLD}${BLUE}
-                     █████╗ ██████╗  █████╗ ██╗  ██╗       █████╗ ██╗  ██╗██████╗  █████╗  █████╗ ████████╗
-                    ██╔══██╗██╔══██╗██╔══██╗██║  ██║      ██╔══██╗██║  ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝
-                    ███████║██████╔╝██║  ╚═╝███████║█████╗██║  ╚═╝███████║██████╔╝██║  ██║██║  ██║   ██║   
-                    ██╔══██║██╔══██╗██║  ██╗██╔══██║╚════╝██║  ██╗██╔══██║██╔══██╗██║  ██║██║  ██║   ██║   
-                    ██║  ██║██║  ██║╚█████╔╝██║  ██║      ╚█████╔╝██║  ██║██║  ██║╚█████╔╝╚█████╔╝   ██║   
-                    ╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝ ╚═╝  ╚═╝       ╚════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝  ╚════╝    ╚═╝   
-                    =======================================================================================
+                                   █████╗ ██████╗  █████╗ ██╗  ██╗       █████╗ ██╗  ██╗██████╗  █████╗  █████╗ ████████╗
+                                  ██╔══██╗██╔══██╗██╔══██╗██║  ██║      ██╔══██╗██║  ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝
+                                  ███████║██████╔╝██║  ╚═╝███████║      ██║  ╚═╝███████║██████╔╝██║  ██║██║  ██║   ██║   
+                                  ██╔══██║██╔══██╗██║  ██╗██╔══██║      ██║  ██╗██╔══██║██╔══██╗██║  ██║██║  ██║   ██║   
+                                  ██║  ██║██║  ██║╚█████╔╝██║  ██║      ╚█████╔╝██║  ██║██║  ██║╚█████╔╝╚█████╔╝   ██║   
+                                  ╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝ ╚═╝  ╚═╝       ╚════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚════╝  ╚════╝    ╚═╝   
+                                  =======================================================================================
 ${RESET}"
 echo
 echo
@@ -300,11 +332,10 @@ cat > /mnt/etc/xdg/reflector/reflector.conf <<REFLECTOR
 --latest 20
 --fastest 20
 --protocol https
---country India,France
 --save /etc/pacman.d/mirrorlist
 REFLECTOR
-arch-chroot /mnt reflector --save /etc/pacman.d/mirrorlist --country India,France --protocol https --latest 20 --fastest 20 --sort rate --verbose &>> $LOGFILE
-arch-chroot /mnt systemctl enable reflector.service &>> $LOGFILE
+arch-chroot /mnt reflector --save /etc/pacman.d/mirrorlist --protocol https --latest 20 --fastest 20 --sort rate --verbose &>> $LOGFILE
+arch-chroot /mnt systemctl enable reflector.timer &>> $LOGFILE
 Done_Print "SYNCING FASTEST MIRRORS."
 echo
 
@@ -373,7 +404,7 @@ echo
 # CREATE USER ACCOUNT :
 # ~~~~~~~~~~~~~~~~~~~~~
 Info_Print "CREATING USER ACCOUNT."
-arch-chroot /mnt useradd -mG wheel,audio,video,optical,storage,disk,network,power,input "${USER_NAME}" -c "${FULL_NAME}"
+arch-chroot /mnt useradd -mG wheel,audio,video,optical,storage,disk,network,power,input "${USER_NAME}" -s /bin/bash -c "${FULL_NAME}"
 sed -i 's/# %wheel/%wheel/g' /mnt/etc/sudoers
 Done_Print "CREATING USER ACCOUNT."
 echo
@@ -396,17 +427,21 @@ arch-chroot /mnt systemctl enable systemd-boot-update.service &>> $LOGFILE
 Done_Print "ENABLING ESSENTIAL SERVICES."
 echo
 
+# SET VM GUEST TOOLS :
+# ~~~~~~~~~~~~~~~~~~~~
+VM_Check
+
 # TITLE SHOW :
 # ~~~~~~~~~~~~
 echo
 echo -ne "${BOLD}${BLUE}
-            ██╗███╗  ██╗ ██████╗████████╗ █████╗ ██╗     ██╗      █████╗ ████████╗██╗ █████╗ ███╗  ██╗      ██████╗  █████╗ ███╗  ██╗███████╗
-            ██║████╗ ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     ██╔══██╗╚══██╔══╝██║██╔══██╗████╗ ██║      ██╔══██╗██╔══██╗████╗ ██║██╔════╝
-            ██║██╔██╗██║╚█████╗    ██║   ███████║██║     ██║     ███████║   ██║   ██║██║  ██║██╔██╗██║      ██║  ██║██║  ██║██╔██╗██║█████╗  
-            ██║██║╚████║ ╚═══██╗   ██║   ██╔══██║██║     ██║     ██╔══██║   ██║   ██║██║  ██║██║╚████║      ██║  ██║██║  ██║██║╚████║██╔══╝  
-            ██║██║ ╚███║██████╔╝   ██║   ██║  ██║███████╗███████╗██║  ██║   ██║   ██║╚█████╔╝██║ ╚███║      ██████╔╝╚█████╔╝██║ ╚███║███████╗
-            ╚═╝╚═╝  ╚══╝╚═════╝    ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚════╝ ╚═╝  ╚══╝      ╚═════╝  ╚════╝ ╚═╝  ╚══╝╚══════╝
-            =================================================================================================================================
+              ██╗███╗  ██╗ ██████╗████████╗ █████╗ ██╗     ██╗      █████╗ ████████╗██╗ █████╗ ███╗  ██╗      ██████╗  █████╗ ███╗  ██╗███████╗
+              ██║████╗ ██║██╔════╝╚══██╔══╝██╔══██╗██║     ██║     ██╔══██╗╚══██╔══╝██║██╔══██╗████╗ ██║      ██╔══██╗██╔══██╗████╗ ██║██╔════╝
+              ██║██╔██╗██║╚█████╗    ██║   ███████║██║     ██║     ███████║   ██║   ██║██║  ██║██╔██╗██║      ██║  ██║██║  ██║██╔██╗██║█████╗  
+              ██║██║╚████║ ╚═══██╗   ██║   ██╔══██║██║     ██║     ██╔══██║   ██║   ██║██║  ██║██║╚████║      ██║  ██║██║  ██║██║╚████║██╔══╝  
+              ██║██║ ╚███║██████╔╝   ██║   ██║  ██║███████╗███████╗██║  ██║   ██║   ██║╚█████╔╝██║ ╚███║      ██████╔╝╚█████╔╝██║ ╚███║███████╗
+              ╚═╝╚═╝  ╚══╝╚═════╝    ╚═╝   ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚════╝ ╚═╝  ╚══╝      ╚═════╝  ╚════╝ ╚═╝  ╚══╝╚══════╝
+              =================================================================================================================================
 ${RESET}"
 
 # EXIT INSTALLATION :
@@ -436,7 +471,7 @@ sleep 1
 echo -en "${BBLUE}${BOLD} . ${RESET}"
 sleep 1
 echo -en "${BBLUE}${BOLD} . ${RESET}"
-reboot
+reboot now
 
 
 
