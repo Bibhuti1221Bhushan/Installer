@@ -288,7 +288,7 @@ Wiping_Drive () {
         parted "$DISK" -s mklabel gpt &>> $LOGFILE
         parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE &>> $LOGFILE
         parted "$DISK" -s set 1 esp on &>> $LOGFILE
-            if [ -z "$SWAP_SIZE" ]; then
+            if [[ "$SWAP_SIZE" -gt 0 ]]; then
             parted "$DISK" -s mkpart primary ext4 $BOOT_SIZE $ROOT_SIZE &>> $LOGFILE
             parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100% &>> $LOGFILE
             else
