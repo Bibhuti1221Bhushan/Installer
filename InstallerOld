@@ -15,13 +15,13 @@ KEYBOARD="us" 				      	     # SET KEYBOARD
 
 # SET DISK VARIABLES :
 # ~~~~~~~~~~~~~~~~~~~~
-DISK=/dev/vda                            # SET DISK FOR INSTALLATION
+DISK=/dev/sda                            # SET DISK FOR INSTALLATION
 
 # SET SIZE OF DRIVE :
 # ~~~~~~~~~~~~~~~~~~~
-BOOT_SIZE=550M                           # SET BOOT PARTITION SIZE
-SWAP_SIZE=2G                             # SET SWAP PARTITION SIZE
-ROOT_SIZE=15G                            # SET ROOT PARTITION SIZE
+BOOT_SIZE=550MiB                         # SET BOOT PARTITION SIZE
+SWAP_SIZE=8GiB                           # SET SWAP PARTITION SIZE
+ROOT_SIZE=35GiB                          # SET ROOT PARTITION SIZE
 HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
 
 # SET PACKAGES :
@@ -60,29 +60,24 @@ Warn_Print () {
     echo -e "${BOLD}${RED}! ${BLUE}WARN${RED} ! - $1${RESET}"
 }
 
+# CENTER TEXT FUNCTION :
+# ~~~~~~~~~~~~~~~~~~~~~~
+COLUMNS=$(tput cols)
+TEXTSIZE=18
+INDENT=$(( (COLUMNS - TEXTSIZE) / 2 ))
+PADDING=''
+for ((i=1; i<=INDENT; i++)) ; do
+    PADDING+=' '
+done
+
 # MICROCODE DETECT FUNCTION :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Microcode_Detector () {
     CPU=$(grep vendor_id /proc/cpuinfo)
     if [[ "$CPU" == *"AuthenticAMD"* ]]; then
         MICROCODE="amd-ucode"
-    elif [[ "$CPU" == *"GenuineIntel"* ]]; then
+    else
         MICROCODE="intel-ucode"
-    fi
-}
-
-# GRAPHICS DRIVERS CHECK FUNCTION :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Graphics_Detect () {
-    GPU=$(lspci)
-    if grep -E "NVIDIA|GeForce" <<< ${GPU}; then
-        arch-chroot /mnt pacman -S --noconfirm --needed nvidia nvidia-utils
-    elif lspci | grep 'VGA' | grep -E "Radeon|AMD"; then
-        pacman -S --noconfirm --needed xf86-video-amdgpu
-    elif grep -E "Integrated Graphics Controller" <<< ${GPU}; then
-        pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa
-    elif grep -E "Intel Corporation UHD" <<< ${GPU}; then
-        pacman -S --needed --noconfirm libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa
     fi
 }
 
@@ -92,26 +87,26 @@ VM_Check () {
     DETECT=$(systemd-detect-virt)
     case $DETECT in
         kvm )       Info_Print "KVM HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
-                    arch-chroot /mnt pacman -S --noconfirm qemu-guest-agent &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable qemu-guest-agent &>> $LOGFILE
+                    pacstrap /mnt qemu-guest-agent &>> $LOGFILE
+                    systemctl enable qemu-guest-agent --root=/mnt &>> $LOGFILE
                     Done_Print "SETTING UP KVM GUEST TOOLS."
                     ;;
         vmware )    Info_Print "VMWARE WORKSTATION HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
-                    arch-chroot /mnt pacman -S --noconfirm open-vm-tools &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable vmtoolsd &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable vmware-vmblock-fuse &>> $LOGFILE
+                    pacstrap /mnt open-vm-tools &>> $LOGFILE
+                    systemctl enable vmtoolsd --root=/mnt &>> $LOGFILE
+                    systemctl enable vmware-vmblock-fuse --root=/mnt &>> $LOGFILE
                     Done_Print "SETTING UP VMWARE GUEST TOOLS."
                     ;;
         oracle )    Info_Print "VIRTUALBOX HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
-                    arch-chroot /mnt pacman -S --noconfirm virtualbox-guest-utils &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable vboxservice &>> $LOGFILE
+                    pacstrap /mnt virtualbox-guest-utils &>> $LOGFILE
+                    systemctl enable vboxservice --root=/mnt &>> $LOGFILE
                     Done_Print "SETTING UP VIRTUALBOX GUEST TOOLS."
                     ;;
         microsoft ) Info_Print "HYPER-V HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
-                    arch-chroot /mnt pacman -S --noconfirm hyperv &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable hv_fcopy_daemon &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable hv_kvp_daemon &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable hv_vss_daemon &>> $LOGFILE
+                    pacstrap /mnt hyperv &>> $LOGFILE
+                    systemctl enable hv_fcopy_daemon --root=/mnt &>> $LOGFILE
+                    systemctl enable hv_kvp_daemon --root=/mnt &>> $LOGFILE
+                    systemctl enable hv_vss_daemon --root=/mnt &>> $LOGFILE
                     Done_Print "SETTING UP HYPER-V GUEST TOOLS."
                     ;;
     esac
@@ -128,38 +123,29 @@ clear
 # TITLE SHOW :
 # ~~~~~~~~~~~~
 echo
-echo -ne "${BOLD}${BLUE}
-                                            ███████╗ █████╗ ███████╗██╗   ██╗      █████╗ ██████╗  ██████╗██╗  ██╗
-                                            ██╔════╝██╔══██╗██╔════╝╚██╗ ██╔╝     ██╔══██╗██╔══██╗██╔════╝██║  ██║
-                                            █████╗  ███████║███████╗ ╚████╔╝      ███████║██████╔╝██║     ███████║
-                                            ██╔══╝  ██╔══██║╚════██║  ╚██╔╝       ██╔══██║██╔══██╗██║     ██╔══██║
-                                            ███████╗██║  ██║███████║   ██║        ██║  ██║██║  ██║╚██████╗██║  ██║
-                                            ╚══════╝╚═╝  ╚═╝╚══════╝   ╚═╝        ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
-                                            ======================================================================
-${RESET}"
-echo
+echo -e "${BOLD}${BLUE}${PADDING}@@@@@@@@   @@@@@@    @@@@@@   @@@ @@@      @@@@@@   @@@@@@@    @@@@@@@  @@@  @@@"  
+echo -e "${BOLD}${BLUE}${PADDING}@@@@@@@@  @@@@@@@@  @@@@@@@   @@@ @@@     @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@  @@@"  
+echo -e "${BOLD}${BLUE}${PADDING}@@!       @@!  @@@  !@@       @@! !@@     @@!  @@@  @@!  @@@  !@@       @@!  @@@"  
+echo -e "${BOLD}${BLUE}${PADDING}!@!       !@!  @!@  !@!       !@! @!!     !@!  @!@  !@!  @!@  !@!       !@!  @!@"  
+echo -e "${BOLD}${BLUE}${PADDING}@!!!:!    @!@!@!@!  !!@@!!     !@!@!      @!@!@!@!  @!@!!@!   !@!       @!@!@!@!"  
+echo -e "${BOLD}${BLUE}${PADDING}!!!!!:    !!!@!!!!   !!@!!!     @!!!      !!!@!!!!  !!@!@!    !!!       !!!@!!!!"  
+echo -e "${BOLD}${BLUE}${PADDING}!!:       !!:  !!!       !:!    !!:       !!:  !!!  !!: :!!   :!!       !!:  !!!"  
+echo -e "${BOLD}${BLUE}${PADDING}:!:       :!:  !:!      !:!     :!:       :!:  !:!  :!:  !:!  :!:       :!:  !:!"  
+echo -e "${BOLD}${BLUE}${PADDING}.:: ::::  ::   :::  :::: ::      ::       ::   :::  ::   :::   ::: :::  ::   :::"  
+echo -e "${BOLD}${BLUE}${PADDING}: :: ::.  .:   : :  :: : :       :        .:   : :  .:   : :   :: :: :   :   : :"
+echo   
+echo -e "${BOLD}${GREEN}${PADDING}================================================================================="
 echo
 
 # VERIFY BOOT MODE :
 # ~~~~~~~~~~~~~~~~~~
 if [ ! -d /sys/firmware/efi/efivars ]; then
   Warn_Print "YOU ARE NOT BOOTED IN UEFI."
-  sleep 5
-  echo
   exit 1
 fi
 
 # SYNC TIME AND DATE :
 # ~~~~~~~~~~~~~~~~~~~~
-Date_Time () {
-    CMD=timedatectl set-ntp true
-    if $CMD ; then
-        Done_Print "SYNCING TIME AND DATE."
-    else
-        Warn_Print "SYNCING TIME AND DATE."
-    fi
-}
-
 Info_Print "SYNCING TIME AND DATE."
 timedatectl set-ntp true
 Done_Print "SYNCING TIME AND DATE."
@@ -175,8 +161,8 @@ echo
 # WIPE THE DISK :
 # ~~~~~~~~~~~~~~~
 Info_Print "WIPING DISK."
-sgdisk -Zo "$DISK" &>> $LOGFILE
 wipefs -af "$DISK" &> $LOGFILE
+sgdisk -Zo "$DISK" &>> $LOGFILE
 Done_Print "WIPING DISK."
 echo
 
@@ -227,9 +213,9 @@ Microcode_Detector
 
 # INSTALLING BASE SYSTEM :
 # ~~~~~~~~~~~~~~~~~~~~~~~~
-Info_Print "INSTALLING BASE SYSTEM."
+Info_Print "INSTALLING BASE SYSTEM PACKAGES."
 pacstrap -K /mnt --noconfirm --disable-download-timeout base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE &>> $LOGFILE
-Done_Print "INSTALLING BASE SYSTEM."
+Done_Print "INSTALLING BASE SYSTEM PACKAGES."
 echo
 
 # GENERATE THE FSTAB FILE :
@@ -291,18 +277,6 @@ echo
 # ~~~~~~~~~~~~~~~~~~
 Info_Print "SETTING LOCALE UNITS."
 echo "LANG=$LOCALE" > /mnt/etc/locale.conf
-echo "LC_COLLATE=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_ADDRESS=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_CTYPE=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_IDENTIFICATION=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_MEASUREMENT=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_MESSAGES=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_MONETARY=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_NAME=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_NUMERIC=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_PAPER=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_TELEPHONE=$LOCALE" >> /mnt/etc/locale.conf
-echo "LC_TIME=$LOCALE" >> /mnt/etc/locale.conf
 Done_Print "SETTING LOCALE UNITS."
 echo
 
@@ -335,9 +309,9 @@ echo
 # MODIFYING PACMAN :
 # ~~~~~~~~~~~~~~~~~~
 Info_Print "MODIFYING PACMAN CONFIG."
-sed -i 's/#Color/Color\nILoveCandy/' /etc/pacman.conf
+sed -i 's/^#Color/Color/' /mnt/etc/pacman.conf
+sed -i '/NoProgressBar/iILoveCandy' /mnt/etc/pacman.conf
 sed -i '/\[multilib\]/,/Include/s/^#//' /mnt/etc/pacman.conf
-sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /mnt/etc/pacman.conf
 sed -i 's/^#ParallelDownloads/ParallelDownloads/' /mnt/etc/pacman.conf
 Done_Print "MODIFYING PACMAN CONFIG."
 echo
@@ -382,11 +356,11 @@ echo "blacklist iTCO_wdt" > /mnt/etc/modprobe.d/nowatchdog.conf
 Done_Print "DISABLING WATCH-DOG LOG."
 echo
 
-# REDUCE SHUTDOWN TIME :
-# ~~~~~~~~~~~~~~~~~~~~~~
-Info_Print "REDUCING SHUTDOWN TIME."
+# REDUCE SHUTDOWN TIME-OUT :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "REDUCING SHUTDOWN TIME-OUT."
 sed -i "s/^#DefaultTimeoutStopSec=.*/DefaultTimeoutStopSec=10s/" /mnt/etc/systemd/system.conf
-Done_Print "REDUCING SHUTDOWN TIME."
+Done_Print "REDUCING SHUTDOWN TIME-OUT."
 echo
 
 # RE-INITIALIZE INITRAMFS :
@@ -418,7 +392,7 @@ echo
 
 # INSTALL PACKAGES :
 # ~~~~~~~~~~~~~~~~~~
-arch-chroot /mnt pacman -S --needed --noconfirm $EXTRA pacman-contrib &>> $LOGFILE
+arch-chroot /mnt pacman -S --needed --noconfirm $EXTRA &>> $LOGFILE
 
 # SET ROOT PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
@@ -432,8 +406,8 @@ echo
 # CREATE USER ACCOUNT :
 # ~~~~~~~~~~~~~~~~~~~~~
 Info_Print "CREATING USER ACCOUNT."
-arch-chroot /mnt useradd -m -g users -G wheel,audio,video,storage,network,power,optical -c "${FULL_NAME}" -s /bin/bash "${USER_NAME}"
-sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /mnt/etc/sudoers
+arch-chroot /mnt useradd -mG wheel,audio,video,optical,storage,disk,network,power,input "${USER_NAME}" -s /bin/bash -c "${FULL_NAME}"
+sed -i 's/# %wheel/%wheel/g' /mnt/etc/sudoers
 Done_Print "CREATING USER ACCOUNT."
 echo
 
@@ -446,14 +420,13 @@ printf "%s\n%s" "${USER_PASSWORD}" "${USER_PASSWORD}" | arch-chroot /mnt passwd 
 Done_Print "SETTING USER PASSWORD."
 echo
 
-# ENABLE SERVICES :
-# ~~~~~~~~~~~~~~~~~
-Info_Print "ENABLING SERVICES."
-# arch-chroot /mnt systemctl enable systemd-timesyncd.service &>> $LOGFILE
+# ENABLE ESSENTIAL SERVICES :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "ENABLING ESSENTIAL SERVICES."
+arch-chroot /mnt systemctl enable systemd-timesyncd.service &>> $LOGFILE
 arch-chroot /mnt systemctl enable fstrim.timer &>> $LOGFILE
-arch-chroot /mnt systemctl enable paccache.timer &>> $LOGFILE
-# arch-chroot /mnt systemctl enable systemd-boot-update.service &>> $LOGFILE
-Done_Print "ENABLING SERVICES."
+arch-chroot /mnt systemctl enable systemd-boot-update.service &>> $LOGFILE
+Done_Print "ENABLING ESSENTIAL SERVICES."
 echo
 
 # SET VM GUEST TOOLS :
@@ -500,7 +473,7 @@ sleep 1
 echo -en "${BBLUE}${BOLD} . ${RESET}"
 sleep 1
 echo -en "${BBLUE}${BOLD} . ${RESET}"
-# reboot now
+reboot now
 
 
 

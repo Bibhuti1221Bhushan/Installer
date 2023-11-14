@@ -60,3 +60,432 @@ Description = Backing up /boot...
 When = PostTransaction
 Exec = /usr/bin/rsync -a --delete /boot /.bootbackup
 EOF
+
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& splash /' /etc/default/grub
+
+# -------------------------------------------------------------------------
+#               Enabling (and Theming) Plymouth Boot Splash
+# -------------------------------------------------------------------------
+
+PLYMOUTH_THEMES_DIR="$HOME/ArchTitus/configs/usr/share/plymouth/themes"
+PLYMOUTH_THEME="arch-glow" # can grab from config later if we allow selection
+mkdir -p /usr/share/plymouth/themes
+echo 'Installing Plymouth theme...'
+cp -rf ${PLYMOUTH_THEMES_DIR}/${PLYMOUTH_THEME} /usr/share/plymouth/themes
+if  [[ $FS == "luks"]]; then
+  sed -i 's/HOOKS=(base udev*/& plymouth/' /etc/mkinitcpio.conf # add plymouth after base udev
+  sed -i 's/HOOKS=(base udev \(.*block\) /&plymouth-/' /etc/mkinitcpio.conf # create plymouth-encrypt after block hook
+else
+  sed -i 's/HOOKS=(base udev*/& plymouth/' /etc/mkinitcpio.conf # add plymouth after base udev
+fi
+plymouth-set-default-theme -R arch-glow # sets the theme and runs mkinitcpio
+echo 'Plymouth theme installed'
+
+
+
+
+
+    # Intel/AMD/NVIDIA drivers are not installed on virtual machines
+    if [ "$hypervisor" = "none" ]; then
+      if lspci | grep "VGA" | grep -iq "Intel"; then
+        DESKTOP_PACKAGES+=('xf86-video-intel')
+      fi
+
+      if lspci | grep "VGA" | grep -iq "NVIDIA"; then
+        gpu_driver=$(dialog --title "Install Graphics Driver" --no-cancel \
+          --menu "The installer has detected an NVIDIA graphics card on your \
+system.\n\nYou may choose to install either the open-source or proprietary \
+driver. If you are unsure, the proprietary driver usually offers the best \
+performance.\n\nGraphics driver:" 16 70 3 \
+"NVIDIA" "Proprietary NVIDIA driver" \
+"Nouveau" "Open-source Nouveau driver" \
+"None" "-" 3>&1 1>&2 2>&3)
+        if [ "$gpu_driver" = "NVIDIA" ]; then
+          # Get only the GPU PCI device ID
+          gpu_pci_id=$(lspci -nn  | grep -ioP 'VGA.*NVIDIA.*\[\K[\w:]+' | sed 's/.*://')
+          # Automatically install the correct driver based on the PCI ID data
+          if grep -Fq "$gpu_pci_id" "$DIR"/etc/nvidia_390_pci_ids; then
+            DESKTOP_PACKAGES+=('nvidia-390xx' 'nvidia-390xx-utils' 'nvidia-390xx-settings')
+          elif grep -Fq "$gpu_pci_id" "$DIR"/etc/nvidia_340_pci_ids; then
+            # Support for nvidia-340xx has been dropped, use nouveau
+            dialog --title "Install Graphics Driver" \
+              --msgbox "Proprietary driver support has ended for your graphics \
+card.\n\nThe open-source Nouveau driver will be installed." 7 65
+            DESKTOP_PACKAGES+=('xf86-video-nouveau' 'mesa')
+          else
+            DESKTOP_PACKAGES+=('nvidia' 'nvidia-utils' 'nvidia-settings')
+          fi
+        else
+          DESKTOP_PACKAGES+=('xf86-video-nouveau' 'mesa')
+        fi
+      elif lspci | grep "VGA" | grep -q "ATI\|AMD"; then
+        gpu_driver=$(dialog --title "Install Graphics Driver" --no-cancel \
+          --menu "The installer has detected an ATI/AMD graphics card on your \
+system.\nThe appropriate driver to install depends on how modern your GPU \
+is.\n\nIf you are unsure, the ATI driver is generally more stable and \
+supports the majority of ATI/AMD GPUs. If you have one of the latest AMD GPUs \
+(Volcanic Islands or newer), then you should install the AMDGPU \
+driver.\n\nGraphics driver:" 17 75 3 \
+"ATI" "Open-source ATI/AMD Radeon driver" \
+"AMDGPU" "Open-source driver for the latest AMD GPUs" \
+"None" "-" 3>&1 1>&2 2>&3)
+        if [ "$gpu_driver" = "ATI" ]; then
+          DESKTOP_PACKAGES+=('xf86-video-ati' 'mesa')
+        else
+          DESKTOP_PACKAGES+=('xf86-video-amdgpu' 'mesa')
+        fi
+      fi
+    else
+      dialog --title "Virtual Machine Detected" \
+        --msgbox "The installer has detected a virtualized environment: \
+$hypervisor\n\nAny required drivers or utilities will be \
+installed for you." 7 70
+      case "$hypervisor" in
+        "vmware") DESKTOP_PACKAGES+=('open-vm-tools' 'xf86-video-vmware' 'xf86-input-vmmouse' 'mesa' 'gtkmm' 'gtkmm3') ;;
+        "oracle") DESKTOP_PACKAGES+=('virtualbox-guest-utils' 'virtualbox-guest-dkms') ;;
+        "parallels") DESKTOP_PACKAGES+=('xf86-video-vesa') ;;
+        *) DESKTOP_PACKAGES+=('xf86-video-fbdev') ;;
+      esac
+    fi
+  fi
+}
+
+# GPU-related globals
+GPU_CHIPSET='Unknown'
+DEFAULT_GPU_DRIVER='xf86-video-vesa'
+NVIDIA_GPU_PACKAGES='
+  nvidia-prime
+  nvidia-settings
+  nvidia-utils lib32-nvidia-utils
+  nvtop
+'
+AMD_GPU_PACKAGES='
+  vulkan-radeon lib32-vulkan-radeon
+'
+INTEL_GPU_PACKAGES='
+  libva-intel-driver lib32-libva-intel-driver
+  vulkan-intel lib32-vulkan-intel
+'
+
+
+libvdpau-va-gl libva-utils
+
+
+
+
+if [ "$hypervisor" != "none" ]; then
+    if [ "$hypervisor" = "oracle" ]; then
+      dialog --infobox "Enabling VirtualBox modules..." 3 50
+      arch-chroot /mnt systemctl enable vboxservice.service &> /dev/null
+    elif [ "$hypervisor" = "vmware" ]; then
+      dialog --infobox "Enabling VMware Open-VM-Tools..." 3 50
+      arch-chroot /mnt systemctl enable vmtoolsd.service &> /dev/null
+      arch-chroot /mnt systemctl enable vmware-vmblock-fuse.service &> /dev/null
+    fi
+  fi
+}
+
+
+
+# Color constants for use with 'echo'
+readonly BLACK='\e[0;30m'
+readonly RED='\e[0;31m'
+readonly GREEN='\e[0;32m'
+readonly YELLOW='\e[0;33m'
+readonly BLUE='\e[0;34m'
+readonly MAGENTA='\e[0;35m'
+readonly CYAN='\e[0;36m'
+readonly WHITE='\e[0;37m'
+readonly BOLD_BLACK='\e[1;30m'
+readonly BOLD_RED='\e[1;31m'
+readonly BOLD_GREEN='\e[1;32m'
+readonly BOLD_YELLOW='\e[1;33m'
+readonly BOLD_BLUE='\e[1;34m'
+readonly BOLD_MAGENTA='\e[1;35m'
+readonly BOLD_CYAN='\e[1;36m'
+readonly BOLD_WHITE='\e[1;37m'
+readonly COLOR_RESET='\e[m'
+
+
+BASE_PACKAGES='
+  acpi
+  alsa-utils
+  arch-wiki-lite
+  asciiquarium
+  audacious
+  base-devel
+  bash-completion
+  breeze
+  cmatrix
+  cool-retro-term
+  cowsay
+  cpupower
+  cups-pdf
+  dialog
+  dictd
+  duf
+  foliate
+  fortune-mod
+  figlet
+  fwupd
+  gamemode lib32-gamemode
+  git-lfs
+  gnu-netcat
+  grub
+  gst-libav
+  gst-plugins-base
+  gst-plugins-good
+  gst-plugins-bad
+  gst-plugins-ugly
+  gufw
+  gvfs-mtp
+  gvfs-smb
+  gvim
+  hplip
+  inetutils
+  iputils
+  jp2a
+  kernel-modules-hook
+  libreoffice-fresh
+  licenses
+  linux
+  linux-firmware
+  linux-headers
+  lolcat
+  man-db
+  man-pages
+  mesa lib32-mesa
+  mlocate
+  neofetch
+  networkmanager
+  noto-fonts-emoji
+  nss-mdns
+  p7zip
+  pacman-contrib
+  pavucontrol
+  pipewire
+  ps_mem
+  pulseaudio-alsa
+  pulseaudio-bluetooth
+  reflector
+  screenfetch
+  sl
+  soundfont-fluid
+  systemd-sysvcompat
+  tree
+  ttf-dejavu
+  ttf-liberation
+  unrar
+  unzip
+  vi
+  wget
+  wtf
+  xchm
+  xclip
+  xdg-user-dirs
+  xorg-apps
+  xorg-server
+  xorg-xinit
+  zip
+
+
+# Needed
+# Utils
+wget
+curl
+tree
+grep
+ripgrep
+openssh
+sshfs
+tldr
+aha
+make
+cmake
+automake
+autoconf
+bash-completion
+htop
+stow
+neofetch
+lsb-release
+v4l2loopback-dkms
+v4l2loopback-utils
+# Tools
+tmux
+net-tools
+npm
+ninja
+flatpak
+# Editors
+nano
+neovim
+# Other file systems
+dosfstools
+exfat-utils
+ntfs-3g
+mtpfs
+gvfs-mtp
+# Archive tools
+unrar
+unzip
+zip
+gzip
+bzip2
+# 'New' tools
+lsd
+btop
+bat
+# Fun
+cmatrix
+figlet
+cowsay
+# File explorer
+vifm
+
+
+
+
+if yesno "${TOUCHPAD_MSG}" "${YES}" "${NO}" --defaultno; then
+    BASE_PACKAGES+='xf86-input-libinput '
+    log "* Added touchpad support"
+  fi
+  if yesno "${OS_PROBER_MSG}" "${YES}" "${NO}" --defaultno; then
+    BASE_PACKAGES+='os-prober '
+    log "* Added OS prober"
+  fi
+  if "${UEFI}"; then
+    BASE_PACKAGES+='efibootmgr '
+    log "* Added EFI boot manager"
+  fi
+  if "${BTRFS_ROOT}"; then
+    BASE_PACKAGES+='grub-btrfs '
+    log "* Added GRUB Btrfs snapshot support"
+  fi
+
+
+
+QEMU = spice-vdagent qemu-guest-agent
+VMWARE = xf86-video-vmware xf86-input-vmmouse 
+
+
+
+# GRUB config
+  mkdir -p /mnt"${grub_theme}"
+  cp -rT "${extra}"/grub /mnt"${grub_theme}"
+  if mount | grep -q ' /mnt/boot type [^b]' ||
+      (! mount | grep -q ' /mnt/boot ' && ! "${BTRFS_ROOT}"); then
+    sed -i 's/GRUB_DEFAULT=0/GRUB_DEFAULT=saved/' "${grub}"
+    sed -i 's/#GRUB_SAVEDEFAULT/GRUB_SAVEDEFAULT/' "${grub}"
+  fi
+  sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=3/' "${grub}"
+  sed -i "s/GRUB_GFXM.*/GRUB_GFXMODE=1920x1080,1366x768,auto/" "${grub}"
+  sed -i "s:#GRUB_COLOR_N.*:GRUB_COLOR_NORMAL=\"red/black\":" "${grub}"
+  sed -i "s:#GRUB_COLOR_H.*:GRUB_COLOR_HIGHLIGHT=\"yellow/black\":" "${grub}"
+  sed -i "s:#GRUB_THEME.*:GRUB_THEME=\"${grub_theme}/theme.txt\":" "${grub}"
+  if "${SYSTEM_AUTO_ENCRYPTED}"; then
+    sed -i "s!quiet!cryptdevice=/dev/lvm/lvroot:root:allow-discards \
+root=/dev/mapper/root transparent_hugepage=never!" "${grub}"
+  else
+    sed -i 's/quiet/transparent_hugepage=never/' "${grub}"
+  fi
+  if grep -q 'nvidia' <<<"${BASE_PACKAGES}"; then
+    sed -i '/GRUB_CMDLINE_LINUX_DEFAULT=/s/.$/ nvidia-drm.modeset=1"/;s/" /"/' \
+      "${grub}"
+
+
+
+echo -e "Section \"InputClass\"\nIdentifier \"system-keyboard\"\n\
+MatchIsKeyboard \"on\"\nOption \"XkbLayout\" \"${KEYMAP}\"\nEndSection" \
+    >/mnt/etc/X11/xorg.conf.d/00-keyboard.conf
+
+if [[ "${DESKTOP_ENV}" == 'kde-plasma' ]]; then
+    mkdir /mnt/etc/sddm.conf.d
+    echo -e "[Autologin]\nRelogin=false\nSession=\nUser=\n\n[General]\n\
+HaltCommand=/usr/bin/systemctl poweroff\nRebootCommand=/usr/bin/systemctl \
+reboot\n\n[Theme]\nCurrent=breeze\n\n[Users]\nMaximumUid=60513\n\
+MinimumUid=1000" >/mnt/etc/sddm.conf.d/kde_settings.conf
+
+
+
+  cp /mnt/etc/skel/.face /mnt/var/lib/AccountsService/icons/"${USERNAME}"
+  echo -e "[User]\nIcon=/var/lib/AccountsService/icons/${USERNAME}
+SystemAccount=false" >/mnt/var/lib/AccountsService/users/"${USERNAME}"
+
+  log "User added: ${USERNAME}"
+}
+
+
+# Remove no password sudo rights
+sed -i 's/^%wheel ALL=(ALL) NOPASSWD: ALL/# %wheel ALL=(ALL) NOPASSWD: ALL/' /etc/sudoers
+sed -i 's/^%wheel ALL=(ALL:ALL) NOPASSWD: ALL/# %wheel ALL=(ALL:ALL) NOPASSWD: ALL/' /etc/sudoers
+# Add sudo rights
+sed -i 's/^# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /etc/sudoers
+sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# PACKAGES
+blueman
+bluez
+bluez-utils
+
+swaync  
+galculator
+sublime text 4
+ms vscode 
+evince
+mpv
+imv + restro
+gnome-disk-utility
+
+
+
+Arc Theme
+Brave
+
+
+
+
+
