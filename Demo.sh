@@ -217,9 +217,9 @@ fi
 # ~~~~~~~~~~~~~~~~~~~~
 Date_Time () {
     Spin 13 SYNCING &
-    CMD="timedatectl set-ntp true"
     PID=$!
-    if $CMD &>> $LOGFILE; then
+    if 
+        timedatectl set-ntp true &>> $LOGFILE; then
         sleep 1
         kill $PID
         Done_Print "SYNCING TIME AND DATE."
@@ -239,9 +239,9 @@ echo
 # ~~~~~~~~~~~~~~~~
 KRings () {
     Spin 8 UPDATING &
-    CMD="pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring"
     PID=$!
-    if $CMD &>> $LOGFILE; then
+    if 
+        pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE; then
         sleep 1
         kill $PID
         Done_Print "UPDATING KEYRINGS."
@@ -260,9 +260,11 @@ echo
 # ~~~~~~~~~~~~~~~
 Wiping_Drive () {
     Spin 4 WIPING &
-    CMD="wipefs -af $DISK ; sgdisk -Zo $DISK"
     PID=$!
-    if $CMD &>> $LOGFILE; then
+    if 
+        wipefs -af "$DISK" &> $LOGFILE
+        sgdisk -Zo "$DISK" &>> $LOGFILE
+        partprobe "$DISK" &>> $LOGFILE; then
         sleep 1
         kill $PID
         Done_Print "WIPING DISK."
@@ -274,4 +276,37 @@ Wiping_Drive () {
 }
 Info_Print "WIPING DISK."
 Wiping_Drive
+echo
+
+
+# PARTITION THE DISK :
+# ~~~~~~~~~~~~~~~~~~~~
+Wiping_Drive () {
+    Spin 4 WIPING &
+    PID=$!
+    if 
+        parted "$DISK" -s mklabel gpt &>> $LOGFILE
+        parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE &>> $LOGFILE
+        parted "$DISK" -s set 1 esp on &>> $LOGFILE
+            if [ -z "$SWAP_SIZE" ]; then
+            parted "$DISK" -s mkpart primary ext4 $BOOT_SIZE $ROOT_SIZE &>> $LOGFILE
+            parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100% &>> $LOGFILE
+            else
+            parted "$DISK" -s mkpart primary linux-swap $BOOT_SIZE $SWAP_SIZE &>> $LOGFILE
+            parted "$DISK" -s mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE &>> $LOGFILE
+            parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100% &>> $LOGFILE
+            fi
+        ; then
+        sleep 1
+        kill $PID
+        Done_Print "WIPING DISK."
+    else
+        kill $PID
+        Warn_Print "WIPING DISK."
+        sleep 1
+    fi
+}
+
+Info_Print "CREATING PARTITIONS."
+
 echo
