@@ -19,14 +19,14 @@ DISK=/dev/vda                            # SET DISK FOR INSTALLATION
 
 # SET PARTITION SIZE :
 # ~~~~~~~~~~~~~~~~~~~~
-BOOT_SIZE=550M                           # SET BOOT PARTITION SIZE
-ROOT_SIZE=15G                            # SET ROOT PARTITION SIZE
+BOOT_SIZE=550                            # SET BOOT PARTITION SIZE
+ROOT_SIZE=15                             # SET ROOT PARTITION SIZE
 HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
 
 # SET SWAP SIZE :
 # ~~~~~~~~~~~~~~~
 SWAP=1                                   # 0 = NO SWAP , 1 = SWAP PARTITION & 2 = SWAP FILE 
-SWAP_SIZE=2G                             # SET SIZE OF SWAP PARTITION OR SWAPFILE
+SWAP_SIZE=2                              # SET SIZE OF SWAP PARTITION OR SWAPFILE
 
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
@@ -305,9 +305,9 @@ KRings () {
     fi
 }
 
-Info_Print "UPDATING KEYRINGS."
-KRings
-echo
+# Info_Print "UPDATING KEYRINGS."
+# KRings
+# echo
 
 # WIPE THE DISK :
 # ~~~~~~~~~~~~~~~
@@ -340,16 +340,16 @@ Creating_Partition () {
     if 
         if [[ "$SWAP_FILE" == "1" ]]; then
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
-            parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"M &>> $LOGFILE
             parted "$DISK" -s set 1 esp on &>> $LOGFILE
-            parted "$DISK" -s mkpart primary linux-swap "$BOOT_SIZE"G "$SWAP_SIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart primary linux-swap "$BOOT_SIZE"M "$SWAP_SIZE"G &>> $LOGFILE
             parted "$DISK" -s mkpart primary ext4 "$SWAP_SIZE"G "$ROOT_SIZE"G &>> $LOGFILE
             parted "$DISK" -s mkpart primary ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
         else
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
-            parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"M &>> $LOGFILE
             parted "$DISK" -s set 1 esp on &>> $LOGFILE
-            parted "$DISK" -s mkpart primary ext4 "$BOOT_SIZE"G "$ROOT_SIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart primary ext4 "$BOOT_SIZE"M "$ROOT_SIZE"G &>> $LOGFILE
             parted "$DISK" -s mkpart primary ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
         fi
     then
@@ -370,10 +370,44 @@ echo
 
 # FORMAT THE PARTITIONS :
 # ~~~~~~~~~~~~~~~~~~~~~~~
+Formatting_Partition () {
+    Spin 10 FORMATTING &
+    PID=$!
+    if 
+        if [[ ! $DISK =~ ^/dev/nvme.* ]]; then
+            if [[ "$SWAP_FILE" == "1" ]]; then
+                mkfs.fat -F 32 -n ESP "$DISK"p1 &>> $LOGFILE
+                mkswap -L SWAP "$DISK"p2 &>> $LOGFILE
+                mkfs.ext4 -L ROOT "$DISK"p3 &>> $LOGFILE
+                mkfs.ext4 -L HOME "$DISK"p4 &>> $LOGFILE
+            else
+                mkfs.fat -F 32 -n ESP "$DISK"p1 &>> $LOGFILE
+                mkfs.ext4 -L ROOT "$DISK"p2 &>> $LOGFILE
+                mkfs.ext4 -L HOME "$DISK"p3 &>> $LOGFILE
+            fi
+        else
+            if [[ "$SWAP_FILE" == "1" ]]; then
+                mkfs.fat -F 32 -n ESP "$DISK"1 &>> $LOGFILE
+                mkswap -L SWAP "$DISK"2 &>> $LOGFILE
+                mkfs.ext4 -L ROOT "$DISK"3 &>> $LOGFILE
+                mkfs.ext4 -L HOME "$DISK"4 &>> $LOGFILE
+            else
+                mkfs.fat -F 32 -n ESP "$DISK"1 &>> $LOGFILE
+                mkfs.ext4 -L ROOT "$DISK"2 &>> $LOGFILE
+                mkfs.ext4 -L HOME "$DISK"3 &>> $LOGFILE
+            fi
+        fi
+    then
+        sleep 1
+        kill $PID
+        Done_Print "FORMATTING PARTITIONS."
+    else
+        kill $PID
+        Warn_Print "FORMATTING PARTITIONS."
+        sleep 1
+    fi
+}
+
 Info_Print "FORMATTING PARTITIONS."
-mkfs.fat -F 32 -n ESP "$DISK"1 &>> $LOGFILE
-mkswap -L SWAP "$DISK"2 &>> $LOGFILE
-mkfs.ext4 -L ROOT "$DISK"3 &>> $LOGFILE
-mkfs.ext4 -L HOME "$DISK"4 &>> $LOGFILE
-Done_Print "FORMATTING PARTITIONS."
+Formatting_Partition
 echo
