@@ -20,9 +20,13 @@ DISK=/dev/vda                            # SET DISK FOR INSTALLATION
 # SET PARTITION SIZE :
 # ~~~~~~~~~~~~~~~~~~~~
 BOOT_SIZE=550M                           # SET BOOT PARTITION SIZE
-SWAP_SIZE=2G                             # SET SWAP PARTITION SIZE (LEAVE BLANK FOR NO SWAP PARTITION OR SWAPFILE)
 ROOT_SIZE=15G                            # SET ROOT PARTITION SIZE
 HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
+
+# SET SWAP SIZE :
+# ~~~~~~~~~~~~~~~
+SWAP_FILE=true                           # TRUE = SWAPFILE , FALSE = SWAP PARTITION & IGNORE = NO SWAP
+SWAP_SIZE=2G                             # SET SIZE OF SWAP PARTITION OR SWAPFILE
 
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
@@ -79,6 +83,9 @@ Title_Print() {
 Spin(){
 VAR="$1"
 case "$VAR" in
+    4)
+        SPIN=("+===" "=+==" "==+=" "===+" "==+=" "=+==");
+        ;;
     5)
         SPIN=("+====" "=+===" "==+==" "===+=" "====+" "===+=" "==+==" "=+===");
         ;;
@@ -281,32 +288,35 @@ echo
 
 # PARTITION THE DISK :
 # ~~~~~~~~~~~~~~~~~~~~
-Wiping_Drive () {
-    Spin 4 WIPING &
+Creating_Partition () {
+    Spin 10 CREATING &
     PID=$!
     if 
-        parted "$DISK" -s mklabel gpt &>> $LOGFILE
-        parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE &>> $LOGFILE
-        parted "$DISK" -s set 1 esp on &>> $LOGFILE
-            if [[ "$SWAP_SIZE" -gt 0 ]]; then
-            parted "$DISK" -s mkpart primary ext4 $BOOT_SIZE $ROOT_SIZE &>> $LOGFILE
-            parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100% &>> $LOGFILE
-            else
+        if [[ "$SWAP_FILE" == "false" ]]; then
+            parted "$DISK" -s mklabel gpt &>> $LOGFILE
+            parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE &>> $LOGFILE
+            parted "$DISK" -s set 1 esp on &>> $LOGFILE
             parted "$DISK" -s mkpart primary linux-swap $BOOT_SIZE $SWAP_SIZE &>> $LOGFILE
             parted "$DISK" -s mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE &>> $LOGFILE
             parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100% &>> $LOGFILE
-            fi
-        ; then
+        else
+            parted "$DISK" -s mklabel gpt &>> $LOGFILE
+            parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE &>> $LOGFILE
+            parted "$DISK" -s set 1 esp on &>> $LOGFILE
+            parted "$DISK" -s mkpart primary ext4 $BOOT_SIZE $ROOT_SIZE &>> $LOGFILE
+            parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100% &>> $LOGFILE
+        fi
+    then
         sleep 1
         kill $PID
-        Done_Print "WIPING DISK."
+        Done_Print "CREATING PARTITIONS."
     else
         kill $PID
-        Warn_Print "WIPING DISK."
+        Warn_Print "CREATING PARTITIONS."
         sleep 1
     fi
 }
 
 Info_Print "CREATING PARTITIONS."
-
+Creating_Partition
 echo
