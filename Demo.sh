@@ -25,7 +25,7 @@ HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
 
 # SET SWAP SIZE :
 # ~~~~~~~~~~~~~~~
-SWAP_FILE=true                           # TRUE = SWAPFILE , FALSE = SWAP PARTITION & IGNORE = NO SWAP
+SWAP=1                                   # 0 = NO SWAP , 1 = SWAP PARTITION & 2 = SWAP FILE 
 SWAP_SIZE=2G                             # SET SIZE OF SWAP PARTITION OR SWAPFILE
 
 # SET PACKAGES :
@@ -216,9 +216,56 @@ echo
 # ~~~~~~~~~~~~~~~~~~
 if [ ! -d /sys/firmware/efi/efivars ]; then
   Warn_Print "YOU ARE NOT BOOTED IN UEFI."
-  sleep 5
   exit 1
 fi
+
+# CHECK VARIABLE :
+# ~~~~~~~~~~~~~~~~
+Var_Checking () {
+    if [[ -z "$USERNAME"  ]]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE USERNAME."
+        exit 1
+    elif [ -z "$NICKNAME" ]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE NICKNAME."
+        exit 1
+    elif [ -z "$HOSTNAME" ]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE HOSTNAME."
+        exit 1
+    elif [ -z "$TIMEZONE" ]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE TIMEZONE."
+        exit 1
+    elif [ -z "$KEYBOARD" ]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE KEYBOARD."
+        exit 1
+    elif [ -z "$LOCALE" ]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE LOCALE."
+        exit 1
+    elif [[ ! $DISK =~ ^/dev/.* ]]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE DISK."
+        exit 1
+    elif [[ $BOOT_SIZE -lt 500 ]]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE BOOT_SIZE."
+        exit 1
+    elif [[ $ROOT_SIZE -lt 5 ]]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE ROOT_SIZE."
+        exit 1
+    elif [[ $SWAP != 0 && $SWAP != 1 && $SWAP != 2 ]]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE SWAP."
+        exit 1
+    elif [[ $SWAP_SIZE -lt 2 ]];  then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE SWAP_SIZE."
+        sleep 5
+        exit 1
+    elif [[ ! $KERNEL == linux* ]]; then
+        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE KERNEL."
+        exit 1
+    fi
+    Done_Print "CHECKING VARIABLE."
+}
+
+Info_Print "CHECKING VARIABLE."
+Var_Checking
+echo
 
 # SYNC TIME AND DATE :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -240,7 +287,6 @@ Date_Time () {
 Info_Print "SYNCING TIME AND DATE."
 Date_Time
 echo
-
 
 # UPDATE KEYRING :
 # ~~~~~~~~~~~~~~~~
@@ -292,19 +338,19 @@ Creating_Partition () {
     Spin 10 CREATING &
     PID=$!
     if 
-        if [[ "$SWAP_FILE" == "false" ]]; then
+        if [[ "$SWAP_FILE" == "1" ]]; then
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
-            parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE &>> $LOGFILE
+            parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"G &>> $LOGFILE
             parted "$DISK" -s set 1 esp on &>> $LOGFILE
-            parted "$DISK" -s mkpart primary linux-swap $BOOT_SIZE $SWAP_SIZE &>> $LOGFILE
-            parted "$DISK" -s mkpart primary ext4 $SWAP_SIZE $ROOT_SIZE &>> $LOGFILE
-            parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100% &>> $LOGFILE
+            parted "$DISK" -s mkpart primary linux-swap "$BOOT_SIZE"G "$SWAP_SIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart primary ext4 "$SWAP_SIZE"G "$ROOT_SIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart primary ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
         else
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
-            parted "$DISK" -s mkpart ESP fat32 1MiB $BOOT_SIZE &>> $LOGFILE
+            parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"G &>> $LOGFILE
             parted "$DISK" -s set 1 esp on &>> $LOGFILE
-            parted "$DISK" -s mkpart primary ext4 $BOOT_SIZE $ROOT_SIZE &>> $LOGFILE
-            parted "$DISK" -s mkpart primary ext4 $ROOT_SIZE 100% &>> $LOGFILE
+            parted "$DISK" -s mkpart primary ext4 "$BOOT_SIZE"G "$ROOT_SIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart primary ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
         fi
     then
         sleep 1
@@ -319,4 +365,15 @@ Creating_Partition () {
 
 Info_Print "CREATING PARTITIONS."
 Creating_Partition
+echo
+
+
+# FORMAT THE PARTITIONS :
+# ~~~~~~~~~~~~~~~~~~~~~~~
+Info_Print "FORMATTING PARTITIONS."
+mkfs.fat -F 32 -n ESP "$DISK"1 &>> $LOGFILE
+mkswap -L SWAP "$DISK"2 &>> $LOGFILE
+mkfs.ext4 -L ROOT "$DISK"3 &>> $LOGFILE
+mkfs.ext4 -L HOME "$DISK"4 &>> $LOGFILE
+Done_Print "FORMATTING PARTITIONS."
 echo
