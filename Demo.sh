@@ -341,16 +341,21 @@ Creating_Partition () {
         if [[ "$SWAP" == "1" ]]; then
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
             parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"M &>> $LOGFILE
-            parted "$DISK" -s set 1 esp on &>> $LOGFILE
             parted "$DISK" -s mkpart SWAP linux-swap "$BOOT_SIZE"M "$SWAP_SIZE"G &>> $LOGFILE
             parted "$DISK" -s mkpart ROOT ext4 "$SWAP_SIZE"G "$ROOT_SIZE"G &>> $LOGFILE
             parted "$DISK" -s mkpart HOME ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
+            parted "$DISK" -s set 1 esp on &>> $LOGFILE
+            parted "$DISK" -s set 2 swap on &>> $LOGFILE
+            parted "$DISK" -s set 3 root on &>> $LOGFILE
+            parted "$DISK" -s set 4 linux-home on &>> $LOGFILE
         else
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
             parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"M &>> $LOGFILE
-            parted "$DISK" -s set 1 esp on &>> $LOGFILE
             parted "$DISK" -s mkpart ROOT ext4 "$BOOT_SIZE"M "$ROOT_SIZE"G &>> $LOGFILE
             parted "$DISK" -s mkpart HOME ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
+            parted "$DISK" -s set 1 esp on &>> $LOGFILE
+            parted "$DISK" -s set 2 root on &>> $LOGFILE
+            parted "$DISK" -s set 3 linux-home on &>> $LOGFILE
         fi
     then
         sleep 1
