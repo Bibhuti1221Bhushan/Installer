@@ -338,19 +338,23 @@ Creating_Partition () {
     Spin 10 CREATING &
     PID=$!
     if 
-        if [[ "$SWAP_FILE" == "1" ]]; then
+        if [[ "$SWAP" == "1" ]]; then
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
             parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"M &>> $LOGFILE
+            parted "$DISK" -s mkpart SWAP linux-swap "$BOOT_SIZE"M "$SWAP_SIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart ROOT ext4 "$SWAP_SIZE"G "$ROOT_SIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart HOME ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
             parted "$DISK" -s set 1 esp on &>> $LOGFILE
-            parted "$DISK" -s mkpart primary linux-swap "$BOOT_SIZE"M "$SWAP_SIZE"G &>> $LOGFILE
-            parted "$DISK" -s mkpart primary ext4 "$SWAP_SIZE"G "$ROOT_SIZE"G &>> $LOGFILE
-            parted "$DISK" -s mkpart primary ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
+            parted "$DISK" -s set 3 root on &>> $LOGFILE
+            parted "$DISK" -s set 4 linux-home on &>> $LOGFILE
         else
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
             parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"M &>> $LOGFILE
+            parted "$DISK" -s mkpart ROOT ext4 "$BOOT_SIZE"M "$ROOT_SIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart HOME ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
             parted "$DISK" -s set 1 esp on &>> $LOGFILE
-            parted "$DISK" -s mkpart primary ext4 "$BOOT_SIZE"M "$ROOT_SIZE"G &>> $LOGFILE
-            parted "$DISK" -s mkpart primary ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
+            parted "$DISK" -s set 2 root on &>> $LOGFILE
+            parted "$DISK" -s set 3 linux-home on &>> $LOGFILE
         fi
     then
         sleep 1
@@ -374,8 +378,8 @@ Formatting_Partition () {
     Spin 10 FORMATTING &
     PID=$!
     if 
-        if [[ ! $DISK =~ ^/dev/nvme.* ]]; then
-            if [[ "$SWAP_FILE" == "1" ]]; then
+        if [[ $DISK =~ ^/dev/nvme.* ]]; then
+            if [[ "$SWAP" == "1" ]]; then
                 mkfs.fat -F 32 -n ESP "$DISK"p1 &>> $LOGFILE
                 mkswap -L SWAP "$DISK"p2 &>> $LOGFILE
                 mkfs.ext4 -L ROOT "$DISK"p3 &>> $LOGFILE
@@ -386,7 +390,7 @@ Formatting_Partition () {
                 mkfs.ext4 -L HOME "$DISK"p3 &>> $LOGFILE
             fi
         else
-            if [[ "$SWAP_FILE" == "1" ]]; then
+            if [[ "$SWAP" == "1" ]]; then
                 mkfs.fat -F 32 -n ESP "$DISK"1 &>> $LOGFILE
                 mkswap -L SWAP "$DISK"2 &>> $LOGFILE
                 mkfs.ext4 -L ROOT "$DISK"3 &>> $LOGFILE
