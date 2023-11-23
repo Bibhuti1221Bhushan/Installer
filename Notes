@@ -4,11 +4,65 @@
 Graphics_Detect     --PACKAGE CHECK
 VM_Check            --REMOVE SCRIPT
 Variable_Checking   --MORE EFFICIENT COMMENT
+Creating_SFile
+
+# ENABLE SERVICES :
+# ~~~~~~~~~~~~~~~~~
+Enabling_Services () {
+    Spin 8 ENABLING &
+    PID=$!
+    if
+        arch-chroot /mnt systemctl enable systemd-timesyncd.service &>> $LOGFILE
+        arch-chroot /mnt systemctl enable fstrim.timer &>> $LOGFILE
+        arch-chroot /mnt systemctl enable paccache.timer &>> $LOGFILE
+        arch-chroot /mnt systemctl enable reflector.timer &>> $LOGFILE
+        arch-chroot /mnt systemctl enable systemd-boot-update.service &>> $LOGFILE
+    then
+        sleep 1
+        kill $PID
+        Done_Print "ENABLING SERVICES."
+    else
+        kill $PID
+        Warn_Print "ENABLING SERVICES."
+        exit 1
+    fi
+}
+
+Info_Print "ENABLING SERVICES."
+Enabling_Services
+echo
+
+# INITIALISING PACMAN KEYRINGS :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Initialising_Pacman () {
+    Spin 15 INITIALISING &
+    PID=$!
+    if
+        arch-chroot /mnt pacman-key --init &>> $LOGFILE
+        arch-chroot /mnt pacman-key --populate &>> $LOGFILE
+    then
+        sleep 1
+        kill $PID
+        Done_Print "INITIALISING PACMAN KEYRINGS."
+    else
+        kill $PID
+        Warn_Print "INITIALISING PACMAN KEYRINGS."
+        exit 1
+    fi
+}
+
+Info_Print "INITIALISING PACMAN KEYRINGS."
+Initialising_Pacman
+echo
 
 
 
 
 
+rm -rf /etc/pacman.d/gnupg
+# pacman -Syy
+# pacman-key --init
+# pacman-key --populate archlinux
 
 
 USERNAME="Cat"

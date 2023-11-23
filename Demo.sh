@@ -130,63 +130,6 @@ Spin(){
     done
 }
 
-# MICROCODE DETECT FUNCTION :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Microcode_Detect () {
-    CPU=$(grep vendor_id /proc/cpuinfo)
-    if [[ "$CPU" == *"AuthenticAMD"* ]]; then
-        MICROCODE="amd-ucode"
-    elif [[ "$CPU" == *"GenuineIntel"* ]]; then
-        MICROCODE="intel-ucode"
-    fi
-}
-
-# GRAPHICS DRIVERS DETECT FUNCTION :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Graphics_Detect () {
-    GPU=$(lspci)
-    if grep -E "NVIDIA|GeForce" <<< ${GPU}; then
-        arch-chroot /mnt pacman -S --noconfirm nvidia nvidia-utils
-    elif lspci | grep 'VGA' | grep -E "Radeon|AMD"; then
-        arch-chroot /mnt pacman -S --noconfirm --needed xf86-video-amdgpu
-    elif grep -E "Integrated Graphics Controller" <<< ${GPU}; then
-        arch-chroot /mnt pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa
-    elif grep -E "Intel Corporation UHD" <<< ${GPU}; then
-        arch-chroot /mnt pacman -S --needed --noconfirm libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa
-    fi
-}
-
-# VIRTUALIZATION CHECK FUNCTION :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-VM_Check () {
-    DETECT=$(systemd-detect-virt)
-    case $DETECT in
-        kvm )       Info_Print "KVM HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
-                    arch-chroot /mnt pacman -S --noconfirm qemu-guest-agent &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable qemu-guest-agent &>> $LOGFILE
-                    Done_Print "SETTING UP KVM GUEST TOOLS."
-                    ;;
-        vmware )    Info_Print "VMWARE WORKSTATION HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
-                    arch-chroot /mnt pacman -S --noconfirm open-vm-tools &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable vmtoolsd &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable vmware-vmblock-fuse &>> $LOGFILE
-                    Done_Print "SETTING UP VMWARE GUEST TOOLS."
-                    ;;
-        oracle )    Info_Print "VIRTUALBOX HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
-                    arch-chroot /mnt pacman -S --noconfirm virtualbox-guest-utils &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable vboxservice &>> $LOGFILE
-                    Done_Print "SETTING UP VIRTUALBOX GUEST TOOLS."
-                    ;;
-        microsoft ) Info_Print "HYPER-V HAS BEEN DETECTED, SETTING UP GUEST TOOLS."
-                    arch-chroot /mnt pacman -S --noconfirm hyperv &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable hv_fcopy_daemon &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable hv_kvp_daemon &>> $LOGFILE
-                    arch-chroot /mnt systemctl enable hv_vss_daemon &>> $LOGFILE
-                    Done_Print "SETTING UP HYPER-V GUEST TOOLS."
-                    ;;
-    esac
-}
-
 # ---------------------------------------------------------- #
 # ----------------- SCRIPT START FROM HERE ----------------- #
 # ---------------------------------------------------------- #
@@ -215,8 +158,8 @@ echo
 # VERIFY BOOT MODE :
 # ~~~~~~~~~~~~~~~~~~
 if [ ! -d /sys/firmware/efi/efivars ]; then
-  Warn_Print "YOU ARE NOT BOOTED IN UEFI."
-  exit 1
+    Warn_Print "YOU ARE NOT BOOTED IN UEFI."
+    exit 1
 fi
 
 # CHECK VARIABLE :
@@ -272,7 +215,7 @@ echo
 Date_Time () {
     Spin 13 SYNCING &
     PID=$!
-    if 
+    if
         timedatectl set-ntp true &>> $LOGFILE
     then
         sleep 1
@@ -294,7 +237,7 @@ echo
 KRings () {
     Spin 8 UPDATING &
     PID=$!
-    if 
+    if
         pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
     then
         sleep 1
@@ -316,7 +259,7 @@ echo
 Wiping_Drive () {
     Spin 4 WIPING &
     PID=$!
-    if 
+    if
         wipefs -af "$DISK" &> $LOGFILE
         sleep 0.5
         sgdisk -Zo "$DISK" &>> $LOGFILE
@@ -343,7 +286,7 @@ echo
 Creating_Partition () {
     Spin 10 CREATING &
     PID=$!
-    if 
+    if
         if [[ "$SWAP" == "1" ]]; then
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
             parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"M &>> $LOGFILE
@@ -384,7 +327,7 @@ echo
 Formatting_Partition () {
     Spin 10 FORMATTING &
     PID=$!
-    if 
+    if
         if [[ $DISK =~ ^/dev/nvme.* ]]; then
             if [[ "$SWAP" == "1" ]]; then
                 mkfs.fat -F 32 -n ESP "$DISK"p1 &>> $LOGFILE
@@ -428,36 +371,36 @@ echo
 Mounting_Partition () {
     Spin 10 MOUNTING &
     PID=$!
-    if 
+    if
         if [[ $DISK =~ ^/dev/nvme.* ]]; then
             if [[ "$SWAP" == "1" ]]; then
-                mount "$DISK"p3 /mnt
+                mount -v "$DISK"p3 /mnt
                 mkdir -vp /mnt/boot &>> $LOGFILE
-                mount "$DISK"p1 /mnt/boot
+                mount -v "$DISK"p1 /mnt/boot
                 mkdir -vp /mnt/home &>> $LOGFILE
-                mount "$DISK"p4 /mnt/home
-                swapon "$DISK"p2 &>> $LOGFILE
+                mount -v "$DISK"p4 /mnt/home
+                swapon -v "$DISK"p2 &>> $LOGFILE
             else
-                mount "$DISK"p2 /mnt
+                mount -v "$DISK"p2 /mnt
                 mkdir -vp /mnt/boot &>> $LOGFILE
-                mount "$DISK"p1 /mnt/boot
+                mount -v "$DISK"p1 /mnt/boot
                 mkdir -vp /mnt/home &>> $LOGFILE
-                mount "$DISK"p3 /mnt/home
+                mount -v "$DISK"p3 /mnt/home
             fi
         else
             if [[ "$SWAP" == "1" ]]; then
-                mount "$DISK"3 /mnt
+                mount -v "$DISK"3 /mnt
                 mkdir -vp /mnt/boot &>> $LOGFILE
-                mount "$DISK"1 /mnt/boot
+                mount -v "$DISK"1 /mnt/boot
                 mkdir -vp /mnt/home &>> $LOGFILE
-                mount "$DISK"4 /mnt/home
-                swapon "$DISK"2 &>> $LOGFILE
+                mount -v "$DISK"4 /mnt/home
+                swapon -v "$DISK"2 &>> $LOGFILE
             else
-                mount "$DISK"2 /mnt
+                mount -v "$DISK"2 /mnt
                 mkdir -vp /mnt/boot &>> $LOGFILE
-                mount "$DISK"1 /mnt/boot
+                mount -v "$DISK"1 /mnt/boot
                 mkdir -vp /mnt/home &>> $LOGFILE
-                mount "$DISK"3 /mnt/home
+                mount -v "$DISK"3 /mnt/home
             fi
         fi
     then
@@ -476,8 +419,17 @@ Info_Print "MOUNTING PARTITIONS."
 Mounting_Partition
 echo
 
-# MICROCODE DETECTIOR :
-# ~~~~~~~~~~~~~~~~~~~~~
+# DETECT MICROCODE :
+# ~~~~~~~~~~~~~~~~~~
+Microcode_Detect () {
+    CPU=$(grep vendor_id /proc/cpuinfo)
+    if [[ "$CPU" == *"AuthenticAMD"* ]]; then
+        MICROCODE="amd-ucode"
+    elif [[ "$CPU" == *"GenuineIntel"* ]]; then
+        MICROCODE="intel-ucode"
+    fi
+}
+
 Microcode_Detect
 
 # INSTALLING BASE SYSTEM :
@@ -485,15 +437,15 @@ Microcode_Detect
 Installing_Base () {
     Spin 11 INSTALLING &
     PID=$!
-    if 
-        pacstrap -K /mnt --noconfirm --disable-download-timeout base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE &>> $LOGFILE; then
+    if
+        pacstrap -K /mnt --noconfirm --disable-download-timeout base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "INSTALLING BASE SYSTEM."
     else
         kill $PID
         Warn_Print "INSTALLING BASE SYSTEM."
-        sleep 1
         exit 1
     fi
 }
@@ -505,17 +457,17 @@ echo
 # GENERATE THE FSTAB FILE :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
 Generating_FTab () {
-    Spin 11 INSTALLING &
+    Spin 10 GENERATING &
     PID=$!
-    if 
-        genfstab -U /mnt >> /mnt/etc/fstab &>> $LOGFILE; then
+    if
+        genfstab -U /mnt >> /mnt/etc/fstab &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "GENERATING FSTAB FILE."
     else
         kill $PID
         Warn_Print "GENERATING FSTAB FILE."
-        sleep 1
         exit 1
     fi
 }
@@ -533,9 +485,10 @@ echo
 Setting_Timezone () {
     Spin 9 SETTING &
     PID=$!
-    if 
+    if
         arch-chroot /mnt ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime &>> $LOGFILE
-        arch-chroot /mnt hwclock --systohc &>> $LOGFILE; then
+        arch-chroot /mnt hwclock --systohc &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "SETTING TIME-ZONE."
@@ -551,22 +504,21 @@ Info_Print "SETTING TIME-ZONE."
 Setting_Timezone
 echo
 
-
 # GENERATE LOCALE :
 # ~~~~~~~~~~~~~~~~~
 Generating_Locale () {
     Spin 6 GENERATING &
     PID=$!
-    if 
+    if
         arch-chroot /mnt sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
-        arch-chroot /mnt locale-gen &>> $LOGFILE; then
+        arch-chroot /mnt locale-gen &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "GENERATING LOCALE."
     else
         kill $PID
         Warn_Print "GENERATING LOCALE."
-        sleep 1
         exit 1
     fi
 }
@@ -580,7 +532,7 @@ echo
 Setting_Locale () {
     Spin 12 SETTING &
     PID=$!
-    if 
+    if
         echo "LANG=$LOCALE" > /mnt/etc/locale.conf
         echo "LC_COLLATE=$LOCALE" >> /mnt/etc/locale.conf
         echo "LC_ADDRESS=$LOCALE" >> /mnt/etc/locale.conf
@@ -593,14 +545,14 @@ Setting_Locale () {
         echo "LC_NUMERIC=$LOCALE" >> /mnt/etc/locale.conf
         echo "LC_PAPER=$LOCALE" >> /mnt/etc/locale.conf
         echo "LC_TELEPHONE=$LOCALE" >> /mnt/etc/locale.conf
-        echo "LC_TIME=$LOCALE" >> /mnt/etc/locale.conf; then
+        echo "LC_TIME=$LOCALE" >> /mnt/etc/locale.conf
+    then
         sleep 1
         kill $PID
         Done_Print "SETTING LOCALE UNITS."
     else
         kill $PID
         Warn_Print "SETTING LOCALE UNITS."
-        sleep 1
         exit 1
     fi
 }
@@ -609,21 +561,20 @@ Info_Print "SETTING LOCALE UNITS."
 Setting_Locale
 echo
 
-
 # SET HOST-NAME :
 # ~~~~~~~~~~~~~~~
 Setting_Hostname () {
     Spin 9 SETTING &
     PID=$!
-    if 
-        echo "$HOSTNAME" > /mnt/etc/hostname; then
+    if
+        echo "$HOSTNAME" > /mnt/etc/hostname
+    then
         sleep 1
         kill $PID
         Done_Print "SETTING HOST-NAME."
     else
         kill $PID
         Warn_Print "SETTING HOST-NAME."
-        sleep 1
         exit 1
     fi
 }
@@ -637,17 +588,17 @@ echo
 Setting_Hosts () {
     Spin 10 SETTING &
     PID=$!
-    if 
+    if
         echo "127.0.0.1      localhost" >> /mnt/etc/hosts
         echo "::1            localhost" >> /mnt/etc/hosts
-        echo "127.0.1.1      $HOSTNAME.localdomain     $HOSTNAME" >> /mnt/etc/hosts; then
+        echo "127.0.1.1      $HOSTNAME.localdomain     $HOSTNAME" >> /mnt/etc/hosts
+    then
         sleep 1
         kill $PID
         Done_Print "SETTING HOSTS FILE."
     else
         kill $PID
         Warn_Print "SETTING HOSTS FILE."
-        sleep 1
         exit 1
     fi
 }
@@ -661,16 +612,16 @@ echo
 Setting_Console () {
     Spin 14 SETTING &
     PID=$!
-    if 
+    if
         echo "KEYMAP=$KEYBOARD" > /mnt/etc/vconsole.conf
-        echo "XKBLAYOUT=$KEYBOARD" >> /mnt/etc/vconsole.conf; then
+        echo "XKBLAYOUT=$KEYBOARD" >> /mnt/etc/vconsole.conf
+    then
         sleep 1
         kill $PID
         Done_Print "SETTING CONSOLE KEYMAP."
     else
         kill $PID
         Warn_Print "SETTING CONSOLE KEYMAP."
-        sleep 1
         exit 1
     fi
 }
@@ -679,52 +630,30 @@ Info_Print "SETTING CONSOLE KEYMAP."
 Setting_Console
 echo
 
-# MODIFYING PACMAN :
-# ~~~~~~~~~~~~~~~~~~
-Modifing_Pacman () {
-    Spin 13 MODIFYING &
+# EDIT PACMAN CONFIG:
+# ~~~~~~~~~~~~~~~~~~~
+Editing_Pacman () {
+    Spin 13 EDITING &
     PID=$!
-    if 
+    if
         sed -i 's/#Color/Color\nILoveCandy/' /etc/pacman.conf
         sed -i '/\[multilib\]/,/Include/s/^#//' /mnt/etc/pacman.conf
         sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /mnt/etc/pacman.conf
-        sed -i 's/^#ParallelDownloads/ParallelDownloads/' /mnt/etc/pacman.conf; then
+        sed -i 's/^#ParallelDownloads/ParallelDownloads/' /mnt/etc/pacman.conf
+        arch-chroot /mnt pacman -Sy --noconfirm &>> $LOGFILE
+    then
         sleep 1
         kill $PID
-        Done_Print "MODIFYING PACMAN CONFIG."
+        Done_Print "EDITING PACMAN CONFIG."
     else
         kill $PID
-        Warn_Print "MODIFYING PACMAN CONFIG."
-        sleep 1
+        Warn_Print "EDITING PACMAN CONFIG."
         exit 1
     fi
 }
 
-Info_Print "MODIFYING PACMAN CONFIG."
-Modifing_Pacman
-echo
-
-# INITIALISING PACMAN KEYRINGS :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Initialising_Pacman () {
-    Spin 15 INITIALISING &
-    PID=$!
-    if 
-        arch-chroot /mnt pacman-key --init &>> $LOGFILE
-        arch-chroot /mnt pacman-key --populate &>> $LOGFILE; then
-        sleep 1
-        kill $PID
-        Done_Print "INITIALISING PACMAN KEYRINGS."
-    else
-        kill $PID
-        Warn_Print "INITIALISING PACMAN KEYRINGS."
-        sleep 1
-        exit 1
-    fi
-}
-
-Info_Print "INITIALISING PACMAN KEYRINGS."
-Initialising_Pacman
+Info_Print "EDITING PACMAN CONFIG."
+Editing_Pacman
 echo
 
 # SYNC FASTEST MIRRORS :
@@ -732,22 +661,22 @@ echo
 Setting_Reflector () {
     Spin 15 SYNCING &
     PID=$!
-    if 
-        arch-chroot /mnt pacman -Sy --needed --noconfirm reflector &>> $LOGFILE
-        arch-chroot /mnt reflector --country India --sort rate --save /etc/pacman.d/mirrorlist --download-timeout 60 --verbose &>> $LOGFILE
-        echo "--verbose" > /mnt/etc/xdg/reflector/reflector.conf
-        echo "--sort rate" >> /mnt/etc/xdg/reflector/reflector.conf
-        echo "--latest 20" >> /mnt/etc/xdg/reflector/reflector.conf
-        echo "--fastest 20" >> /mnt/etc/xdg/reflector/reflector.conf
+    if
+        arch-chroot /mnt pacman -S --noconfirm reflector &>> $LOGFILE
+        arch-chroot /mnt reflector --save /etc/pacman.d/mirrorlist --download-timeout 60 --protocol https --country India --sort rate --verbose &>> $LOGFILE
+        echo "--save /etc/pacman.d/mirrorlist" >> /mnt/etc/xdg/reflector/reflector.conf
+        echo "--download-timeout 60" >> /mnt/etc/xdg/reflector/reflector.conf
         echo "--protocol https" >> /mnt/etc/xdg/reflector/reflector.conf
-        echo "--save /etc/pacman.d/mirrorlist" >> /mnt/etc/xdg/reflector/reflector.conf; then
+        echo "--country India" >> /mnt/etc/xdg/reflector/reflector.conf
+        echo "--sort rate" >> /mnt/etc/xdg/reflector/reflector.conf
+        echo "--verbose" > /mnt/etc/xdg/reflector/reflector.conf
+    then
         sleep 1
         kill $PID
         Done_Print "SYNCING FASTEST MIRRORS."
     else
         kill $PID
         Warn_Print "SYNCING FASTEST MIRRORS."
-        sleep 1
         exit 1
     fi
 }
@@ -758,69 +687,69 @@ echo
 
 # SET NETWORK MANAGER :
 # ~~~~~~~~~~~~~~~~~~~~~
-Setting_NetManager () {
+Setting_NManager () {
     Spin 15 SETTING &
     PID=$!
-    if 
-        arch-chroot /mnt pacman -S --needed --noconfirm networkmanager &>> $LOGFILE
-        arch-chroot /mnt systemctl enable NetworkManager &>> $LOGFILE; then
+    if
+        arch-chroot /mnt pacman -S --noconfirm networkmanager &>> $LOGFILE
+        arch-chroot /mnt systemctl enable NetworkManager &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "SETTING NETWORK MANAGER."
     else
         kill $PID
         Warn_Print "SETTING NETWORK MANAGER."
-        sleep 1
         exit 1
     fi
 }
 
 Info_Print "SETTING NETWORK MANAGER."
-Setting_NetManager
+Setting_NManager
 echo
 
 # NO WATCH-DOG :
 # ~~~~~~~~~~~~~~
-Disabling_WatchDog () {
+Disabling_WDog () {
     Spin 13 DISABLING &
     PID=$!
-    if 
-        echo "blacklist iTCO_wdt" > /mnt/etc/modprobe.d/nowatchdog.conf; then
+    if
+        echo "blacklist iTCO_wdt" > /mnt/etc/modprobe.d/nowatchdog.conf
+    then
         sleep 1
         kill $PID
         Done_Print "DISABLING WATCH-DOG LOG."
     else
         kill $PID
         Warn_Print "DISABLING WATCH-DOG LOG."
-        sleep 1
         exit 1
     fi
 }
 
 Info_Print "DISABLING WATCH-DOG LOG."
-Disabling_WatchDog
+Disabling_WDog
 echo
 
 # REDUCE SHUTDOWN TIME :
 # ~~~~~~~~~~~~~~~~~~~~~~
-Reducing_Time () {
+Reducing_STime () {
     Spin 13 REDUCING &
     PID=$!
-    if 
-        sed -i "s/^#DefaultTimeoutStopSec=.*/DefaultTimeoutStopSec=10s/" /mnt/etc/systemd/system.conf; then
+    if
+        sed -i "s/^#DefaultTimeoutStopSec=.*/DefaultTimeoutStopSec=10s/" /mnt/etc/systemd/system.conf
+    then
         sleep 1
         kill $PID
         Done_Print "REDUCING SHUTDOWN TIME."
     else
         kill $PID
         Warn_Print "REDUCING SHUTDOWN TIME."
-        sleep 1
         exit 1
     fi
 }
 
 Info_Print "REDUCING SHUTDOWN TIME."
-Reducing_Time
+Reducing_STime
 echo
 
 # RE-INITIALIZE INITRAMFS :
@@ -828,15 +757,15 @@ echo
 Initialising_Kernel () {
     Spin 9 RE-INITIALISING &
     PID=$!
-    if 
-        arch-chroot /mnt mkinitcpio -P &>> $LOGFILE; then
+    if
+        arch-chroot /mnt mkinitcpio -P &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "RE-INITIALISING INITRAMFS."
     else
         kill $PID
         Warn_Print "RE-INITIALISING INITRAMFS."
-        sleep 1
         exit 1
     fi
 }
@@ -847,47 +776,31 @@ echo
 
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
-Setting_BootLoader () {
+Setting_BLoader () {
     Spin 11 SETTING &
     PID=$!
     if
         arch-chroot /mnt bootctl install --esp-path=/boot/ &>> $LOGFILE
-        echo "title   Boot Manager" >> /mnt/boot/loader/entries/Arch.conf
-        echo "linux   /vmlinuz-$KERNEL" >> /mnt/boot/loader/entries/Arch.conf
-        echo "initrd  /$MICROCODE.img" >> /mnt/boot/loader/entries/Arch.conf
-        echo "initrd  /initramfs-$KERNEL.img" >> /mnt/boot/loader/entries/Arch.conf
-        
-        echo "default Arch.conf" >> /mnt/boot/loader/loader.conf
-        echo "console-mode max" >> /mnt/boot/loader/loader.conf
+        echo "default arch.conf" >> /mnt/boot/loader/loader.conf
         echo "timeout 0" >> /mnt/boot/loader/loader.conf
-        echo "editor yes" >> /mnt/boot/loader/loader.conf
-        if [[ $DISK =~ ^/dev/nvme.* ]]; then
-            if [[ "$SWAP" == "1" ]]; then
-               echo "options root=${DISK}p3 rw rootfstype=ext4" >> /mnt/boot/loader/entries/Arch.conf
-            else
-               echo "options root=${DISK}p2 rw rootfstype=ext4" >> /mnt/boot/loader/entries/Arch.conf
-            fi
-        else
-            if [[ "$SWAP" == "1" ]]; then
-                echo "options root=${DISK}3 rw rootfstype=ext4" >> /mnt/boot/loader/entries/Arch.conf
-            else
-                echo "options root=${DISK}2 rw rootfstype=ext4" >> /mnt/boot/loader/entries/Arch.conf
-            fi
-        fi
-        then
+        echo "title   Boot Manager" >> /mnt/boot/loader/entries/arch.conf
+        echo "linux   /vmlinuz-$KERNEL" >> /mnt/boot/loader/entries/arch.conf
+        echo "initrd  /$MICROCODE.img" >> /mnt/boot/loader/entries/arch.conf
+        echo "initrd  /initramfs-$KERNEL.img" >> /mnt/boot/loader/entries/arch.conf
+        echo "options root="LABEL=ROOT" rw" >> /mnt/boot/loader/entries/arch.conf
+    then
         sleep 1
         kill $PID
         Done_Print "SETTING BOOT LOADER."
     else
         kill $PID
         Warn_Print "SETTING BOOT LOADER."
-        sleep 1
         exit 1
     fi
 }
 
 Info_Print "SETTING BOOT LOADER."
-Setting_BootLoader
+Setting_BLoader
 echo
 
 # INSTALL PACKAGES :
@@ -895,15 +808,15 @@ echo
 Installing_Extra () {
     Spin 14 INSTALLING &
     PID=$!
-    if 
-        arch-chroot /mnt pacman -S --needed --noconfirm $EXTRA pacman-contrib &>> $LOGFILE; then
+    if
+        arch-chroot /mnt pacman -S --noconfirm $EXTRA &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "INSTALLING EXTRA PACKAGES."
     else
         kill $PID
         Warn_Print "INSTALLING EXTRA PACKAGES."
-        sleep 1
         exit 1
     fi
 }
@@ -913,18 +826,18 @@ echo
 
 # SET ROOT PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
-Setting_RootPassWd () {
+Setting_RPassWd () {
     Spin 13 SETTING &
     PID=$!
-    if 
-        printf "%s\n%s" "${ROOT_PASSWORD}" "${ROOT_PASSWORD}" | arch-chroot /mnt passwd &>> $LOGFILE; then
+    if
+        printf "%s\n%s" "${ROOT_PASSWORD}" "${ROOT_PASSWORD}" | arch-chroot /mnt passwd &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "SETTING ROOT PASSWORD."
     else
         kill $PID
         Warn_Print "SETTING ROOT PASSWORD."
-        sleep 1
         exit 1
     fi
 }
@@ -932,7 +845,7 @@ Setting_RootPassWd () {
 echo -en "${BCYAN}! NOTE !${BYELO} - ENTER ROOT PASSWORD :  ${RESET}"
 read ROOT_PASSWORD
 Info_Print "SETTING ROOT PASSWORD."
-Setting_RootPassWd
+Setting_RPassWd
 echo
 
 # CREATE USER ACCOUNT :
@@ -940,16 +853,16 @@ echo
 Creating_Account () {
     Spin 12 CREATING &
     PID=$!
-    if 
-        arch-chroot /mnt useradd -m -g users -G wheel,audio,video,storage,network,power,optical -c "${FULL_NAME}" -s /bin/bash "${USER_NAME}"
-        sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /mnt/etc/sudoers; then
+    if
+        arch-chroot /mnt useradd -m -G wheel,audio,video,storage,network,power,optical -c "${NICKNAME}" -s /bin/bash "${USERNAME}"
+        sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /mnt/etc/sudoers
+    then
         sleep 1
         kill $PID
         Done_Print "CREATING USER ACCOUNT."
     else
         kill $PID
         Warn_Print "CREATING USER ACCOUNT."
-        sleep 1
         exit 1
     fi
 }
@@ -960,18 +873,18 @@ echo
 
 # SET USER PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
-Setting_AccountPassWd () {
+Setting_UPassWd () {
     Spin 13 SETTING &
     PID=$!
-    if 
-        printf "%s\n%s" "${USER_PASSWORD}" "${USER_PASSWORD}" | arch-chroot /mnt passwd $USER_NAME &>> $LOGFILE; then
+    if
+        printf "%s\n%s" "${USER_PASSWORD}" "${USER_PASSWORD}" | arch-chroot /mnt passwd $USERNAME &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "SETTING USER PASSWORD."
     else
         kill $PID
         Warn_Print "SETTING USER PASSWORD."
-        sleep 1
         exit 1
     fi
 }
@@ -979,48 +892,24 @@ Setting_AccountPassWd () {
 echo -en "${BCYAN}! NOTE !${BYELO} - ENTER USER PASSWORD :  ${RESET}"
 read USER_PASSWORD
 Info_Print "SETTING USER PASSWORD."
-Setting_AccountPassWd
+Setting_UPassWd
 echo
 
-# ENABLE SERVICES :
-# ~~~~~~~~~~~~~~~~~
-Enabling_Services () {
-    Spin 8 ENABLING &
-    PID=$!
-    if 
-        # arch-chroot /mnt systemctl enable systemd-timesyncd.service &>> $LOGFILE
-        arch-chroot /mnt systemctl enable fstrim.timer &>> $LOGFILE
-        arch-chroot /mnt systemctl enable paccache.timer &>> $LOGFILE
-        arch-chroot /mnt systemctl enable reflector.timer &>> $LOGFILE
-        # arch-chroot /mnt systemctl enable systemd-boot-update.service &>> $LOGFILE
-    then
-        sleep 1
-        kill $PID
-        Done_Print "ENABLING SERVICES."
-    else
-        kill $PID
-        Warn_Print "ENABLING SERVICES."
-        sleep 1
-        exit 1
-    fi
-}
 
-Info_Print "ENABLING SERVICES."
-Enabling_Services
-echo
 
 # CREATING SWAP FILE :
 # ~~~~~~~~~~~~~~~~~~~~
-Creating_Swap () {
+Creating_SFile () {
     Spin 9 CREATING &
     PID=$!
-    if 
+    if
         if [[ "$SWAP" == "2" ]]; then
-            dd if=/dev/zero of=/opt/swapfile bs=1M count=$(("$SWAP_SIZE" * 1024))
-            chmod 600 /opt/swapfile
-            mkswap /opt/swapfile
-            swapon /opt/swapfile
-            echo '/opt/swapfile none swap sw 0 0' | tee -a /etc/fstab
+            mkdir -vp /mnt/swap &>> $LOGFILE
+            arch-chroot /mnt dd if=/dev/zero of=/swap/swapfile bs=1M count=$(("$SWAP_SIZE" * 1024)) &>> $LOGFILE
+            arch-chroot /mnt chmod 600 /swap/swapfile &>> $LOGFILE
+            arch-chroot /mnt mkswap /swap/swapfile &>> $LOGFILE
+            arch-chroot /mnt swapon /swap/swapfile &>> $LOGFILE
+            echo '/swap/swapfile none swap sw 0 0' | tee -a /mnt/etc/fstab &>> $LOGFILE
         fi
     then
         sleep 1
@@ -1029,25 +918,92 @@ Creating_Swap () {
     else
         kill $PID
         Warn_Print "CREATING SWAP FILE."
-        sleep 1
         exit 1
     fi
 }
 
 Info_Print "CREATING SWAP FILE."
-Creating_Swap
+Creating_SFile
+echo
+
+# SET GRAPHICS DRIVER :
+# ~~~~~~~~~~~~~~~~~~~~~
+Setting_Graphics () {
+    Spin 15 SETTING &
+    PID=$!
+    if
+        GPU=$(lspci)
+        if grep -E "NVIDIA|GeForce" <<< ${GPU}; then
+            arch-chroot /mnt pacman -S --noconfirm nvidia nvidia-utils &>> $LOGFILE
+        elif lspci | grep 'VGA' | grep -E "Radeon|AMD"; then
+            arch-chroot /mnt pacman -S --noconfirm --needed xf86-video-amdgpu &>> $LOGFILE
+        elif grep -E "Integrated Graphics Controller" <<< ${GPU}; then
+            arch-chroot /mnt pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa &>> $LOGFILE
+        elif grep -E "Intel Corporation UHD" <<< ${GPU}; then
+            arch-chroot /mnt pacman -S --needed --noconfirm libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa &>> $LOGFILE
+        fi
+    then
+        sleep 1
+        kill $PID
+        Done_Print "SETTING GRAPHICS DRIVER."
+    else
+        kill $PID
+        Warn_Print "SETTING GRAPHICS DRIVER."
+        exit 1
+    fi
+}
+
+Info_Print "SETTING GRAPHICS DRIVER."
+Setting_Graphics
 echo
 
 # SET VM GUEST TOOLS :
 # ~~~~~~~~~~~~~~~~~~~~
-VM_Check
+Setting_VMTools () {
+    Spin 14 SETTING &
+    PID=$!
+    if
+        VM=$(systemd-detect-virt)
+        if [[ $VM =~ kvm ]]; then
+            arch-chroot /mnt pacman -S --noconfirm qemu-guest-agent &>> $LOGFILE
+            arch-chroot /mnt systemctl enable qemu-guest-agent &>> $LOGFILE
+        elif [[ $VM =~ vmware ]]; then
+            arch-chroot /mnt pacman -S --noconfirm open-vm-tools &>> $LOGFILE
+            arch-chroot /mnt systemctl enable vmtoolsd &>> $LOGFILE
+            arch-chroot /mnt systemctl enable vmware-vmblock-fuse &>> $LOGFILE
+        elif [[ $VM =~ oracle ]]; then
+            arch-chroot /mnt pacman -S --noconfirm virtualbox-guest-utils &>> $LOGFILE
+            arch-chroot /mnt systemctl enable vboxservice &>> $LOGFILE
+        elif [[ $VM =~ microsoft ]]; then
+            arch-chroot /mnt pacman -S --noconfirm hyperv &>> $LOGFILE
+            arch-chroot /mnt systemctl enable hv_fcopy_daemon &>> $LOGFILE
+            arch-chroot /mnt systemctl enable hv_kvp_daemon &>> $LOGFILE
+            arch-chroot /mnt systemctl enable hv_vss_daemon &>> $LOGFILE
+        fi
+    then
+        sleep 1
+        kill $PID
+        Done_Print "SETTING VM GUEST TOOLS."
+    else
+        kill $PID
+        Warn_Print "SETTING VM GUEST TOOLS."
+        exit 1
+    fi
+}
+
+If [[ "$VM" = "none" ]]; then
+else
+    Info_Print "SETTING VM GUEST TOOLS."
+    Setting_VMTools
+    echo
+fi
 
 # COPY LOG FILE :
 # ~~~~~~~~~~~~~~~
 Coping_Logs () {
     Spin 8 COPING &
     PID=$!
-    if 
+    if
         cp -r Installer.log /mnt/
     then
         sleep 1
@@ -1056,7 +1012,6 @@ Coping_Logs () {
     else
         kill $PID
         Warn_Print "COPING LOG FILE."
-        sleep 1
         exit 1
     fi
 }
