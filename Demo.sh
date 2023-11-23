@@ -389,18 +389,18 @@ Mounting_Partition () {
             fi
         else
             if [[ "$SWAP" == "1" ]]; then
-                mount -v "$DISK"3 /mnt
+                mount -v "$DISK"3 /mnt &>> $LOGFILE
                 mkdir -vp /mnt/boot &>> $LOGFILE
-                mount -v "$DISK"1 /mnt/boot
+                mount -v "$DISK"1 /mnt/boot &>> $LOGFILE
                 mkdir -vp /mnt/home &>> $LOGFILE
-                mount -v "$DISK"4 /mnt/home
+                mount -v "$DISK"4 /mnt/home &>> $LOGFILE
                 swapon -v "$DISK"2 &>> $LOGFILE
             else
-                mount -v "$DISK"2 /mnt
+                mount -v "$DISK"2 /mnt &>> $LOGFILE
                 mkdir -vp /mnt/boot &>> $LOGFILE
-                mount -v "$DISK"1 /mnt/boot
+                mount -v "$DISK"1 /mnt/boot &>> $LOGFILE
                 mkdir -vp /mnt/home &>> $LOGFILE
-                mount -v "$DISK"3 /mnt/home
+                mount -v "$DISK"3 /mnt/home &>> $LOGFILE
             fi
         fi
     then
