@@ -1,5 +1,15 @@
 #!/bin/bash
 
+# WORKING ON THIS SCRIPT :
+Graphics_Detect     --PACKAGE CHECK
+VM_Check            --REMOVE SCRIPT
+Variable_Checking   --MORE EFFICIENT COMMENT
+
+
+
+
+
+
 
 USERNAME="Cat"
 useradd -mG users,wheel -s /bin/bash ${USERNAME}

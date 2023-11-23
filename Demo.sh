@@ -6,27 +6,27 @@
 
 # SET GENERAL VARIABLES :
 # ~~~~~~~~~~~~~~~~~~~~~~~
-USERNAME="Bibhuti"				         # SET USER-NAME
-NICKNAME="Bibhuti Bhushan"		         # SET NICK-NAME
-HOSTNAME="iTunes"			      	     # SET HOST-NAME
-TIMEZONE="Asia/Kolkata"	    	         # SET TIME-ZONE
-KEYBOARD="us" 				      	     # SET KEYBOARD
-LOCALE="en_US.UTF-8"			         # SET LOCALE
+USERNAME="Bibhuti"                       # SET USER-NAME
+NICKNAME="Bibhuti Bhushan"               # SET NICK-NAME
+HOSTNAME="iTunes"                        # SET HOST-NAME
+TIMEZONE="Asia/Kolkata"                  # SET TIME-ZONE
+KEYBOARD="us"                            # SET KEYBOARD
+LOCALE="en_US.UTF-8"                     # SET LOCALE
 
 # SET DISK VARIABLES :
 # ~~~~~~~~~~~~~~~~~~~~
-DISK=/dev/vda                            # SET DISK FOR INSTALLATION
+DISK=/dev/sda                            # SET DISK FOR INSTALLATION
 
 # SET PARTITION SIZE :
 # ~~~~~~~~~~~~~~~~~~~~
-BOOT_SIZE=550                            # SET BOOT PARTITION SIZE
-ROOT_SIZE=15                             # SET ROOT PARTITION SIZE
+BOOT_SIZE=550                            # SET BOOT PARTITION SIZE ( NOTE - SIZE IS IN MB )
+ROOT_SIZE=15                             # SET ROOT PARTITION SIZE ( NOTE - SIZE IS IN GB )
 HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
 
 # SET SWAP SIZE :
 # ~~~~~~~~~~~~~~~
-SWAP=1                                   # 0 = NO SWAP , 1 = SWAP PARTITION & 2 = SWAP FILE 
-SWAP_SIZE=2                              # SET SIZE OF SWAP PARTITION OR SWAPFILE
+SWAP=2                                   # 0 = NO SWAP , 1 = SWAP PARTITION & 2 = SWAP FILE 
+SWAP_SIZE=2                              # SET SIZE OF SWAP PARTITION OR SWAP FILE ( NOTE - SIZE IS IN GB )
 
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
@@ -42,7 +42,7 @@ LOGFILE="Installer.log"
 # ---------------------------------------------------------- #
 
 # COLOR VARIABLES :
-# ~~~~~~~~~~~~~~~~~ 
+# ~~~~~~~~~~~~~~~~~
 BREDD="\e[1;31m"
 BGREE="\e[1;32m"
 BYELO="\e[1;33m"
@@ -81,58 +81,58 @@ Title_Print() {
 # SPIN FUNCTION :
 # ~~~~~~~~~~~~~~~
 Spin(){
-VAR="$1"
-case "$VAR" in
-    4)
-        SPIN=("+===" "=+==" "==+=" "===+" "==+=" "=+==");
-        ;;
-    5)
-        SPIN=("+====" "=+===" "==+==" "===+=" "====+" "===+=" "==+==" "=+===");
-        ;;
-    6)
-        SPIN=("+=====" "=+====" "==+===" "===+==" "====+=" "=====+" "====+=" "===+==" "==+===" "=+====");
-        ;;
-    7)
-        SPIN=("+======" "=+=====" "==+====" "===+===" "====+==" "=====+=" "======+" "=====+=" "====+==" "===+===" "==+====" "=+=====");
-        ;;
-    8)
-        SPIN=("+=======" "=+======" "==+=====" "===+====" "====+===" "=====+==" "======+=" "=======+" "======+=" "=====+==" "====+===" "===+====" "==+=====" "=+======");
-        ;;
-    9)
-        SPIN=("+========" "=+=======" "==+======" "===+=====" "====+====" "=====+===" "======+==" "=======+=" "========+" "=======+=" "======+==" "=====+===" "====+====" "===+=====" "==+======" "=+=======");
-        ;;
-    10)
-        SPIN=("+=========" "=+========" "==+=======" "===+======" "====+=====" "=====+====" "======+===" "=======+==" "========+=" "=========+" "========+=" "=======+==" "======+===" "=====+====" "====+=====" "===+======" "==+=======" "=+========");
-        ;;
-    11)
-        SPIN=("+==========" "=+=========" "==+========" "===+=======" "====+======" "=====+=====" "======+====" "=======+===" "========+==" "=========+=" "==========+" "=========+=" "========+==" "=======+===" "======+====" "=====+=====" "====+======" "===+=======" "==+========" "=+=========");
-        ;;
-    12)
-        SPIN=("+===========" "=+==========" "==+=========" "===+========" "====+=======" "=====+======" "======+=====" "=======+====" "========+===" "=========+==" "==========+=" "===========+" "==========+=" "=========+==" "========+===" "=======+====" "======+=====" "=====+======" "====+=======" "===+========" "==+=========" "=+==========");
-        ;;
-    13)
-        SPIN=("+============" "=+===========" "==+==========" "===+=========" "====+========" "=====+=======" "======+======" "=======+=====" "========+====" "=========+===" "==========+==" "===========+=" "============+" "===========+=" "==========+==" "=========+===" "========+====" "=======+=====" "======+======" "=====+=======" "====+========" "===+=========" "==+==========" "=+===========");
-        ;;
-    14)
-        SPIN=("+=============" "=+============" "==+===========" "===+==========" "====+=========" "=====+========" "======+=======" "=======+======" "========+=====" "=========+====" "==========+===" "===========+==" "============+=" "=============+" "============+=" "===========+==" "==========+===" "=========+====" "========+=====" "=======+======" "======+=======" "=====+========" "====+=========" "===+==========" "==+===========" "=+============");
-        ;;
-    15)
-        SPIN=("+==============" "=+=============" "==+============" "===+===========" "====+==========" "=====+=========" "======+========" "=======+=======" "========+======" "=========+=====" "==========+====" "===========+===" "============+==" "=============+=" "==============+" "=============+=" "============+==" "===========+===" "==========+====" "=========+=====" "========+======" "=======+=======" "======+========" "=====+=========" "====+==========" "===+===========" "==+============" "=+=============");
-        ;;
-esac
-while [ 1 ]
-  do 
-    for INTERVAL in ${SPIN[@]}; 
-    do 
-      echo -ne "\r${BYELO}! WAIT ! - ${BBLUE}${2}${RESET}${BGREE} ${INTERVAL}${RESET}";
-      sleep 0.3;
-    done;
-done
+    VAR="$1"
+    case "$VAR" in
+        4)
+            SPIN=("+===" "=+==" "==+=" "===+" "==+=" "=+==");
+            ;;
+        5)
+            SPIN=("+====" "=+===" "==+==" "===+=" "====+" "===+=" "==+==" "=+===");
+            ;;
+        6)
+            SPIN=("+=====" "=+====" "==+===" "===+==" "====+=" "=====+" "====+=" "===+==" "==+===" "=+====");
+            ;;
+        7)
+            SPIN=("+======" "=+=====" "==+====" "===+===" "====+==" "=====+=" "======+" "=====+=" "====+==" "===+===" "==+====" "=+=====");
+            ;;
+        8)
+            SPIN=("+=======" "=+======" "==+=====" "===+====" "====+===" "=====+==" "======+=" "=======+" "======+=" "=====+==" "====+===" "===+====" "==+=====" "=+======");
+            ;;
+        9)
+            SPIN=("+========" "=+=======" "==+======" "===+=====" "====+====" "=====+===" "======+==" "=======+=" "========+" "=======+=" "======+==" "=====+===" "====+====" "===+=====" "==+======" "=+=======");
+            ;;
+        10)
+            SPIN=("+=========" "=+========" "==+=======" "===+======" "====+=====" "=====+====" "======+===" "=======+==" "========+=" "=========+" "========+=" "=======+==" "======+===" "=====+====" "====+=====" "===+======" "==+=======" "=+========");
+            ;;
+        11)
+            SPIN=("+==========" "=+=========" "==+========" "===+=======" "====+======" "=====+=====" "======+====" "=======+===" "========+==" "=========+=" "==========+" "=========+=" "========+==" "=======+===" "======+====" "=====+=====" "====+======" "===+=======" "==+========" "=+=========");
+            ;;
+        12)
+            SPIN=("+===========" "=+==========" "==+=========" "===+========" "====+=======" "=====+======" "======+=====" "=======+====" "========+===" "=========+==" "==========+=" "===========+" "==========+=" "=========+==" "========+===" "=======+====" "======+=====" "=====+======" "====+=======" "===+========" "==+=========" "=+==========");
+            ;;
+        13)
+            SPIN=("+============" "=+===========" "==+==========" "===+=========" "====+========" "=====+=======" "======+======" "=======+=====" "========+====" "=========+===" "==========+==" "===========+=" "============+" "===========+=" "==========+==" "=========+===" "========+====" "=======+=====" "======+======" "=====+=======" "====+========" "===+=========" "==+==========" "=+===========");
+            ;;
+        14)
+            SPIN=("+=============" "=+============" "==+===========" "===+==========" "====+=========" "=====+========" "======+=======" "=======+======" "========+=====" "=========+====" "==========+===" "===========+==" "============+=" "=============+" "============+=" "===========+==" "==========+===" "=========+====" "========+=====" "=======+======" "======+=======" "=====+========" "====+=========" "===+==========" "==+===========" "=+============");
+            ;;
+        15)
+            SPIN=("+==============" "=+=============" "==+============" "===+===========" "====+==========" "=====+=========" "======+========" "=======+=======" "========+======" "=========+=====" "==========+====" "===========+===" "============+==" "=============+=" "==============+" "=============+=" "============+==" "===========+===" "==========+====" "=========+=====" "========+======" "=======+=======" "======+========" "=====+=========" "====+==========" "===+===========" "==+============" "=+=============");
+            ;;
+    esac
+    while [ 1 ]
+      do
+        for INTERVAL in ${SPIN[@]};
+        do
+          echo -ne "\r${BYELO}! WAIT ! - ${BBLUE}${2}${RESET}${BGREE} ${INTERVAL}${RESET}";
+          sleep 0.3;
+        done;
+    done
 }
 
 # MICROCODE DETECT FUNCTION :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Microcode_Detector () {
+Microcode_Detect () {
     CPU=$(grep vendor_id /proc/cpuinfo)
     if [[ "$CPU" == *"AuthenticAMD"* ]]; then
         MICROCODE="amd-ucode"
@@ -141,8 +141,8 @@ Microcode_Detector () {
     fi
 }
 
-# GRAPHICS DRIVERS CHECK FUNCTION :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# GRAPHICS DRIVERS DETECT FUNCTION :
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Graphics_Detect () {
     GPU=$(lspci)
     if grep -E "NVIDIA|GeForce" <<< ${GPU}; then
@@ -221,7 +221,7 @@ fi
 
 # CHECK VARIABLE :
 # ~~~~~~~~~~~~~~~~
-Var_Checking () {
+Variable_Checking () {
     if [[ -z "$USERNAME"  ]]; then
         Warn_Print "PLEASE EDIT & SPECIFY VARIABLE USERNAME."
         exit 1
@@ -264,7 +264,7 @@ Var_Checking () {
 }
 
 Info_Print "CHECKING VARIABLE."
-Var_Checking
+Variable_Checking
 echo
 
 # SYNC TIME AND DATE :
@@ -273,14 +273,15 @@ Date_Time () {
     Spin 13 SYNCING &
     PID=$!
     if 
-        timedatectl set-ntp true &>> $LOGFILE; then
+        timedatectl set-ntp true &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "SYNCING TIME AND DATE."
     else
         kill $PID
         Warn_Print "SYNCING TIME AND DATE."
-        sleep 1
+        exit 1
     fi
 }
 
@@ -294,20 +295,21 @@ KRings () {
     Spin 8 UPDATING &
     PID=$!
     if 
-        pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE; then
+        pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "UPDATING KEYRINGS."
     else
         kill $PID
         Warn_Print "UPDATING KEYRINGS."
-        sleep 1
+        exit 1
     fi
 }
 
-# Info_Print "UPDATING KEYRINGS."
-# KRings
-# echo
+Info_Print "UPDATING KEYRINGS."
+KRings
+echo
 
 # WIPE THE DISK :
 # ~~~~~~~~~~~~~~~
@@ -316,15 +318,18 @@ Wiping_Drive () {
     PID=$!
     if 
         wipefs -af "$DISK" &> $LOGFILE
+        sleep 0.5
         sgdisk -Zo "$DISK" &>> $LOGFILE
-        partprobe "$DISK" &>> $LOGFILE; then
+        sleep 0.5
+        partprobe "$DISK" &>> $LOGFILE
+    then
         sleep 1
         kill $PID
         Done_Print "WIPING DISK."
     else
         kill $PID
         Warn_Print "WIPING DISK."
-        sleep 1
+        exit 1
     fi
 }
 
@@ -365,7 +370,7 @@ Creating_Partition () {
     else
         kill $PID
         Warn_Print "CREATING PARTITIONS."
-        sleep 1
+        exit 1
     fi
 }
 
@@ -410,7 +415,7 @@ Formatting_Partition () {
     else
         kill $PID
         Warn_Print "FORMATTING PARTITIONS."
-        sleep 1
+        exit 1
     fi
 }
 
@@ -463,6 +468,7 @@ Mounting_Partition () {
         kill $PID
         Warn_Print "MOUNTING PARTITIONS."
         sleep 1
+        exit 1
     fi
 }
 
@@ -472,7 +478,7 @@ echo
 
 # MICROCODE DETECTIOR :
 # ~~~~~~~~~~~~~~~~~~~~~
-Microcode_Detector
+Microcode_Detect
 
 # INSTALLING BASE SYSTEM :
 # ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -488,6 +494,7 @@ Installing_Base () {
         kill $PID
         Warn_Print "INSTALLING BASE SYSTEM."
         sleep 1
+        exit 1
     fi
 }
 
@@ -509,6 +516,7 @@ Generating_FTab () {
         kill $PID
         Warn_Print "GENERATING FSTAB FILE."
         sleep 1
+        exit 1
     fi
 }
 
@@ -535,6 +543,7 @@ Setting_Timezone () {
         kill $PID
         Warn_Print "SETTING TIME-ZONE."
         sleep 1
+        exit 1
     fi
 }
 
@@ -558,6 +567,7 @@ Generating_Locale () {
         kill $PID
         Warn_Print "GENERATING LOCALE."
         sleep 1
+        exit 1
     fi
 }
 
@@ -591,6 +601,7 @@ Setting_Locale () {
         kill $PID
         Warn_Print "SETTING LOCALE UNITS."
         sleep 1
+        exit 1
     fi
 }
 
@@ -613,6 +624,7 @@ Setting_Hostname () {
         kill $PID
         Warn_Print "SETTING HOST-NAME."
         sleep 1
+        exit 1
     fi
 }
 
@@ -636,6 +648,7 @@ Setting_Hosts () {
         kill $PID
         Warn_Print "SETTING HOSTS FILE."
         sleep 1
+        exit 1
     fi
 }
 
@@ -658,6 +671,7 @@ Setting_Console () {
         kill $PID
         Warn_Print "SETTING CONSOLE KEYMAP."
         sleep 1
+        exit 1
     fi
 }
 
@@ -682,6 +696,7 @@ Modifing_Pacman () {
         kill $PID
         Warn_Print "MODIFYING PACMAN CONFIG."
         sleep 1
+        exit 1
     fi
 }
 
@@ -704,6 +719,7 @@ Initialising_Pacman () {
         kill $PID
         Warn_Print "INITIALISING PACMAN KEYRINGS."
         sleep 1
+        exit 1
     fi
 }
 
@@ -718,7 +734,7 @@ Setting_Reflector () {
     PID=$!
     if 
         arch-chroot /mnt pacman -Sy --needed --noconfirm reflector &>> $LOGFILE
-        arch-chroot /mnt reflector --save /etc/pacman.d/mirrorlist --protocol https --latest 20 --fastest 20 --sort rate --verbose &>> $LOGFILE
+        arch-chroot /mnt reflector --country India --sort rate --save /etc/pacman.d/mirrorlist --download-timeout 60 --verbose &>> $LOGFILE
         echo "--verbose" > /mnt/etc/xdg/reflector/reflector.conf
         echo "--sort rate" >> /mnt/etc/xdg/reflector/reflector.conf
         echo "--latest 20" >> /mnt/etc/xdg/reflector/reflector.conf
@@ -732,6 +748,7 @@ Setting_Reflector () {
         kill $PID
         Warn_Print "SYNCING FASTEST MIRRORS."
         sleep 1
+        exit 1
     fi
 }
 
@@ -754,6 +771,7 @@ Setting_NetManager () {
         kill $PID
         Warn_Print "SETTING NETWORK MANAGER."
         sleep 1
+        exit 1
     fi
 }
 
@@ -775,6 +793,7 @@ Disabling_WatchDog () {
         kill $PID
         Warn_Print "DISABLING WATCH-DOG LOG."
         sleep 1
+        exit 1
     fi
 }
 
@@ -796,6 +815,7 @@ Reducing_Time () {
         kill $PID
         Warn_Print "REDUCING SHUTDOWN TIME."
         sleep 1
+        exit 1
     fi
 }
 
@@ -817,6 +837,7 @@ Initialising_Kernel () {
         kill $PID
         Warn_Print "RE-INITIALISING INITRAMFS."
         sleep 1
+        exit 1
     fi
 }
 
@@ -861,6 +882,7 @@ Setting_BootLoader () {
         kill $PID
         Warn_Print "SETTING BOOT LOADER."
         sleep 1
+        exit 1
     fi
 }
 
@@ -882,6 +904,7 @@ Installing_Extra () {
         kill $PID
         Warn_Print "INSTALLING EXTRA PACKAGES."
         sleep 1
+        exit 1
     fi
 }
 Info_Print "INSTALLING EXTRA PACKAGES."
@@ -902,6 +925,7 @@ Setting_RootPassWd () {
         kill $PID
         Warn_Print "SETTING ROOT PASSWORD."
         sleep 1
+        exit 1
     fi
 }
 
@@ -926,6 +950,7 @@ Creating_Account () {
         kill $PID
         Warn_Print "CREATING USER ACCOUNT."
         sleep 1
+        exit 1
     fi
 }
 
@@ -947,6 +972,7 @@ Setting_AccountPassWd () {
         kill $PID
         Warn_Print "SETTING USER PASSWORD."
         sleep 1
+        exit 1
     fi
 }
 
@@ -975,11 +1001,41 @@ Enabling_Services () {
         kill $PID
         Warn_Print "ENABLING SERVICES."
         sleep 1
+        exit 1
     fi
 }
 
 Info_Print "ENABLING SERVICES."
 Enabling_Services
+echo
+
+# CREATING SWAP FILE :
+# ~~~~~~~~~~~~~~~~~~~~
+Creating_Swap () {
+    Spin 9 CREATING &
+    PID=$!
+    if 
+        if [[ "$SWAP" == "2" ]]; then
+            dd if=/dev/zero of=/opt/swapfile bs=1M count=$(("$SWAP_SIZE" * 1024))
+            chmod 600 /opt/swapfile
+            mkswap /opt/swapfile
+            swapon /opt/swapfile
+            echo '/opt/swapfile none swap sw 0 0' | tee -a /etc/fstab
+        fi
+    then
+        sleep 1
+        kill $PID
+        Done_Print "CREATING SWAP FILE."
+    else
+        kill $PID
+        Warn_Print "CREATING SWAP FILE."
+        sleep 1
+        exit 1
+    fi
+}
+
+Info_Print "CREATING SWAP FILE."
+Creating_Swap
 echo
 
 # SET VM GUEST TOOLS :
@@ -1001,6 +1057,7 @@ Coping_Logs () {
         kill $PID
         Warn_Print "COPING LOG FILE."
         sleep 1
+        exit 1
     fi
 }
 

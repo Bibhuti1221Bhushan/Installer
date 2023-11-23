@@ -1,5 +1,18 @@
 {
     "cSpell.words": [
-        "neovim"
+        "efivars",
+        "libvdpau",
+        "neovim",
+        "virt",
+        "vulkan"
+    ],
+    "spellright.language": [
+        "en-US-10-1."
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext",
+        "shellscript"
     ]
 }
