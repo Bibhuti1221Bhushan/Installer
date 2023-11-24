@@ -241,8 +241,10 @@ Initialising_KRings () {
     Spin 8 INITIALISING &
     PID=$!
     if
+        killall gpg-agent
+        rm -rf /etc/pacman.d/gnupg/ &>> $LOGFILE
         pacman-key --init &>> $LOGFILE
-        pacman-key --populate &>> $LOGFILE
+        pacman-key --populate archlinux &>> $LOGFILE
         pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
     then
         sleep 1
