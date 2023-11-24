@@ -1,86 +1,93 @@
 #!/bin/bash
 
 # WORKING ON THIS SCRIPT :
-Graphics_Detect     --PACKAGE CHECK
-VM_Check            --REMOVE SCRIPT
-Variable_Checking   --MORE EFFICIENT COMMENT
 Creating_SFile
 
+
 # ENABLE SERVICES :
-# ~~~~~~~~~~~~~~~~~
-Enabling_Services () {
-    Spin 8 ENABLING &
-    PID=$!
-    if
-        arch-chroot /mnt systemctl enable systemd-timesyncd.service &>> $LOGFILE
-        arch-chroot /mnt systemctl enable fstrim.timer &>> $LOGFILE
-        arch-chroot /mnt systemctl enable paccache.timer &>> $LOGFILE
-        arch-chroot /mnt systemctl enable reflector.timer &>> $LOGFILE
-        arch-chroot /mnt systemctl enable systemd-boot-update.service &>> $LOGFILE
-    then
-        sleep 1
-        kill $PID
-        Done_Print "ENABLING SERVICES."
-    else
-        kill $PID
-        Warn_Print "ENABLING SERVICES."
-        exit 1
-    fi
-}
+arch-chroot /mnt systemctl enable systemd-timesyncd.service &>> $LOGFILE
+arch-chroot /mnt systemctl enable fstrim.timer &>> $LOGFILE
+arch-chroot /mnt systemctl enable paccache.timer &>> $LOGFILE
+arch-chroot /mnt systemctl enable reflector.timer &>> $LOGFILE
+arch-chroot /mnt systemctl enable systemd-boot-update.service &>> $LOGFILE
 
-Info_Print "ENABLING SERVICES."
-Enabling_Services
-echo
-
-# INITIALISING PACMAN KEYRINGS :
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Initialising_Pacman () {
-    Spin 15 INITIALISING &
-    PID=$!
-    if
-        arch-chroot /mnt pacman-key --init &>> $LOGFILE
-        arch-chroot /mnt pacman-key --populate &>> $LOGFILE
-    then
-        sleep 1
-        kill $PID
-        Done_Print "INITIALISING PACMAN KEYRINGS."
-    else
-        kill $PID
-        Warn_Print "INITIALISING PACMAN KEYRINGS."
-        exit 1
-    fi
-}
-
-Info_Print "INITIALISING PACMAN KEYRINGS."
-Initialising_Pacman
-echo
-
-
-
-
-
+# INSTALLING PACMAN KEYS :
 rm -rf /etc/pacman.d/gnupg
-# pacman -Syy
-# pacman-key --init
-# pacman-key --populate archlinux
+pacman-key --init
+pacman-key --populate
+pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring
 
+# SET GRAPHICS DRIVER :
+# ~~~~~~~~~~~~~~~~~~~~~
+Setting_Graphics () {
+    Spin 15 SETTING &
+    PID=$!
+    if
+        GPU=$(lspci)
+        if grep -E "NVIDIA|GeForce" <<< ${GPU}; then
+            arch-chroot /mnt pacman -S --noconfirm nvidia nvidia-utils &>> $LOGFILE
+        elif lspci | grep 'VGA' | grep -E "Radeon|AMD"; then
+            arch-chroot /mnt pacman -S --noconfirm mesa lib32-mesa mesa-vdpau lib32-mesa-vdpau libva-mesa-driver lib32-libva-mesa-driver xf86-video-amdgpu &>> $LOGFILE
+        elif grep -E "Integrated Graphics Controller" <<< ${GPU}; then
+            arch-chroot /mnt pacman -S --noconfirm mesa lib32-mesa vulkan-intel lib32-vulkan-intel libva-intel-driver lib32-libva-intel-driver libva-utils libvdpau-va-gl &>> $LOGFILE
+        elif grep -E "Intel Corporation UHD" <<< ${GPU}; then
+            arch-chroot /mnt pacman -S --noconfirm mesa lib32-mesa vulkan-intel lib32-vulkan-intel libva-intel-driver lib32-libva-intel-driver libva-utils libvdpau-va-gl &>> $LOGFILE
+        fi
+    then
+        sleep 1
+        kill $PID
+        Done_Print "SETTING GRAPHICS DRIVER."
+    else
+        kill $PID
+        Warn_Print "SETTING GRAPHICS DRIVER."
+        exit 1
+    fi
+}
 
-USERNAME="Cat"
-useradd -mG users,wheel -s /bin/bash ${USERNAME}
+Info_Print "SETTING GRAPHICS DRIVER."
+Setting_Graphics
+echo "" &>> $LOGFILE
 
-Info_Print "PLEASE ENTER PASSWORD :  "
-read NEW_PASSWORD
+# SET VM GUEST TOOLS :
+# ~~~~~~~~~~~~~~~~~~~~
+Setting_VMTools () {
+    Spin 14 SETTING &
+    PID=$!
+    if
+        VM=$(systemd-detect-virt)
+        if [[ $VM == kvm ]]; then
+            arch-chroot /mnt pacman -S --noconfirm qemu-guest-agent &>> $LOGFILE
+            arch-chroot /mnt systemctl enable qemu-guest-agent &>> $LOGFILE
+        elif [[ $VM == vmware ]]; then
+            arch-chroot /mnt pacman -S --noconfirm open-vm-tools &>> $LOGFILE
+            arch-chroot /mnt systemctl enable vmtoolsd &>> $LOGFILE
+            arch-chroot /mnt systemctl enable vmware-vmblock-fuse &>> $LOGFILE
+        elif [[ $VM == oracle ]]; then
+            arch-chroot /mnt pacman -S --noconfirm virtualbox-guest-utils &>> $LOGFILE
+            arch-chroot /mnt systemctl enable vboxservice &>> $LOGFILE
+        elif [[ $VM == microsoft ]]; then
+            arch-chroot /mnt pacman -S --noconfirm hyperv &>> $LOGFILE
+            arch-chroot /mnt systemctl enable hv_fcopy_daemon &>> $LOGFILE
+            arch-chroot /mnt systemctl enable hv_kvp_daemon &>> $LOGFILE
+            arch-chroot /mnt systemctl enable hv_vss_daemon &>> $LOGFILE
+        fi
+    then
+        sleep 1
+        kill $PID
+        Done_Print "SETTING VM GUEST TOOLS."
+    else
+        kill $PID
+        Warn_Print "SETTING VM GUEST TOOLS."
+        exit 1
+    fi
+}
 
-# cat > PassWord.Conf <<HOSTS
-# $NEW_PASSWORD
-# $NEW_PASSWORD
-# HOSTS
-
-# FILE="PassWord.Conf"
-# cat $FILE | passwd $USERNAME 
-
-
-
+if [[ "$VM" = "none" ]]; then
+else
+    Info_Print "SETTING VM GUEST TOOLS."
+    Setting_VMTools
+    echo
+fi
 
 # SET PLYMOUTH BOOT SPLASH :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -90,7 +97,7 @@ git clone
 Done_Print "SETTING PLYMOUTH BOOT SPLASH."
 echo
 
-# systemctl enable paccache.timer &>> $LOGFILE
+
 
 
 # Configuring /etc/mkinitcpio.conf.
@@ -151,30 +158,11 @@ echo 'Plymouth theme installed'
 
     # Intel/AMD/NVIDIA drivers are not installed on virtual machines
     if [ "$hypervisor" = "none" ]; then
-      if lspci | grep "VGA" | grep -iq "Intel"; then
-        DESKTOP_PACKAGES+=('xf86-video-intel')
-      fi
 
-      if lspci | grep "VGA" | grep -iq "NVIDIA"; then
-        gpu_driver=$(dialog --title "Install Graphics Driver" --no-cancel \
-          --menu "The installer has detected an NVIDIA graphics card on your \
-system.\n\nYou may choose to install either the open-source or proprietary \
-driver. If you are unsure, the proprietary driver usually offers the best \
-performance.\n\nGraphics driver:" 16 70 3 \
-"NVIDIA" "Proprietary NVIDIA driver" \
-"Nouveau" "Open-source Nouveau driver" \
-"None" "-" 3>&1 1>&2 2>&3)
-        if [ "$gpu_driver" = "NVIDIA" ]; then
-          # Get only the GPU PCI device ID
-          gpu_pci_id=$(lspci -nn  | grep -ioP 'VGA.*NVIDIA.*\[\K[\w:]+' | sed 's/.*://')
-          # Automatically install the correct driver based on the PCI ID data
           if grep -Fq "$gpu_pci_id" "$DIR"/etc/nvidia_390_pci_ids; then
             DESKTOP_PACKAGES+=('nvidia-390xx' 'nvidia-390xx-utils' 'nvidia-390xx-settings')
           elif grep -Fq "$gpu_pci_id" "$DIR"/etc/nvidia_340_pci_ids; then
-            # Support for nvidia-340xx has been dropped, use nouveau
-            dialog --title "Install Graphics Driver" \
-              --msgbox "Proprietary driver support has ended for your graphics \
-card.\n\nThe open-source Nouveau driver will be installed." 7 65
+
             DESKTOP_PACKAGES+=('xf86-video-nouveau' 'mesa')
           else
             DESKTOP_PACKAGES+=('nvidia' 'nvidia-utils' 'nvidia-settings')
@@ -183,13 +171,7 @@ card.\n\nThe open-source Nouveau driver will be installed." 7 65
           DESKTOP_PACKAGES+=('xf86-video-nouveau' 'mesa')
         fi
       elif lspci | grep "VGA" | grep -q "ATI\|AMD"; then
-        gpu_driver=$(dialog --title "Install Graphics Driver" --no-cancel \
-          --menu "The installer has detected an ATI/AMD graphics card on your \
-system.\nThe appropriate driver to install depends on how modern your GPU \
-is.\n\nIf you are unsure, the ATI driver is generally more stable and \
-supports the majority of ATI/AMD GPUs. If you have one of the latest AMD GPUs \
-(Volcanic Islands or newer), then you should install the AMDGPU \
-driver.\n\nGraphics driver:" 17 75 3 \
+
 "ATI" "Open-source ATI/AMD Radeon driver" \
 "AMDGPU" "Open-source driver for the latest AMD GPUs" \
 "None" "-" 3>&1 1>&2 2>&3)
@@ -226,13 +208,6 @@ NVIDIA_GPU_PACKAGES='
 AMD_GPU_PACKAGES='
   vulkan-radeon lib32-vulkan-radeon
 '
-INTEL_GPU_PACKAGES='
-  libva-intel-driver lib32-libva-intel-driver
-  vulkan-intel lib32-vulkan-intel
-'
-
-
-libvdpau-va-gl libva-utils
 
 
 
@@ -251,24 +226,7 @@ if [ "$hypervisor" != "none" ]; then
 
 
 
-# Color constants for use with 'echo'
-readonly BLACK='\e[0;30m'
-readonly RED='\e[0;31m'
-readonly GREEN='\e[0;32m'
-readonly YELLOW='\e[0;33m'
-readonly BLUE='\e[0;34m'
-readonly MAGENTA='\e[0;35m'
-readonly CYAN='\e[0;36m'
-readonly WHITE='\e[0;37m'
-readonly BOLD_BLACK='\e[1;30m'
-readonly BOLD_RED='\e[1;31m'
-readonly BOLD_GREEN='\e[1;32m'
-readonly BOLD_YELLOW='\e[1;33m'
-readonly BOLD_BLUE='\e[1;34m'
-readonly BOLD_MAGENTA='\e[1;35m'
-readonly BOLD_CYAN='\e[1;36m'
-readonly BOLD_WHITE='\e[1;37m'
-readonly COLOR_RESET='\e[m'
+
 
 
 BASE_PACKAGES='

@@ -28,6 +28,10 @@ HOMESIZE=                               # REMAINING SPACE FOR HOME PARTITION
 SWAP=2                                   # 0 = NO SWAP , 1 = SWAP PARTITION & 2 = SWAP FILE 
 SWAPSIZE=2                              # SET SIZE OF SWAP PARTITION OR SWAP FILE ( NOTE - SIZE IS IN GB )
 
+# SET BOOT LOADER :
+# ~~~~~~~~~~~~~~~~~
+BOOTLOADER=1                            # 0 = GRUB & 1 = SYSTEMD-BOOT
+
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
 KERNEL="linux-lts"                       # SET KERNEL PACKAGES
@@ -211,7 +215,7 @@ echo "" &>> $LOGFILE
 
 # SYNC TIME AND DATE :
 # ~~~~~~~~~~~~~~~~~~~~
-Date_Time () {
+Setting_DTime () {
     Spin 13 SYNCING &
     PID=$!
     if
@@ -228,29 +232,31 @@ Date_Time () {
 }
 
 Info_Print "SYNCING TIME AND DATE."
-Date_Time
+Setting_DTime
 echo "" &>> $LOGFILE
 
-# UPDATE KEYRING :
-# ~~~~~~~~~~~~~~~~
-KRings () {
-    Spin 8 UPDATING &
+# INITIALISING KEYRING :
+# ~~~~~~~~~~~~~~~~~~~~~~
+Initialising_KRings () {
+    Spin 8 INITIALISING &
     PID=$!
     if
+        pacman-key --init &>> $LOGFILE
+        pacman-key --populate &>> $LOGFILE
         pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
     then
         sleep 1
         kill $PID
-        Done_Print "UPDATING KEYRINGS."
+        Done_Print "INITIALISING KEYRINGS."
     else
         kill $PID
-        Warn_Print "UPDATING KEYRINGS."
+        Warn_Print "INITIALISING KEYRINGS."
         exit 1
     fi
 }
 
-Info_Print "UPDATING KEYRINGS."
-KRings
+Info_Print "INITIALISING KEYRINGS."
+Initialising_KRings
 echo "" &>> $LOGFILE
 
 # WIPE THE DISK :
@@ -779,26 +785,31 @@ Setting_BLoader () {
     Spin 11 SETTING &
     PID=$!
     if
-        arch-chroot /mnt bootctl install --esp-path=/boot/ &>> $LOGFILE
-        echo "default arch.conf" >> /mnt/boot/loader/loader.conf
-        echo "timeout 0" >> /mnt/boot/loader/loader.conf
-        echo "title   Arch Linux" >> /mnt/boot/loader/entries/arch.conf
-        echo "linux   /vmlinuz-$KERNEL" >> /mnt/boot/loader/entries/arch.conf
-        echo "initrd  /$MICROCODE.img" >> /mnt/boot/loader/entries/arch.conf
-        echo "initrd  /initramfs-$KERNEL.img" >> /mnt/boot/loader/entries/arch.conf
-        if [[ $DISK =~ ^/dev/nvme.* ]]; then
-            if [[ "$SWAP" == "1" ]]; then
-               echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p3) rw" >> /mnt/boot/loader/entries/arch.conf
+        if [[ "$BOOTLOADER" == "1" ]]; then
+            arch-chroot /mnt bootctl install --esp-path=/boot/ &>> $LOGFILE
+            echo "default arch.conf" >> /mnt/boot/loader/loader.conf
+            echo "timeout 0" >> /mnt/boot/loader/loader.conf
+            echo "title   Arch Linux" >> /mnt/boot/loader/entries/arch.conf
+            echo "linux   /vmlinuz-$KERNEL" >> /mnt/boot/loader/entries/arch.conf
+            echo "initrd  /$MICROCODE.img" >> /mnt/boot/loader/entries/arch.conf
+            echo "initrd  /initramfs-$KERNEL.img" >> /mnt/boot/loader/entries/arch.conf
+            if [[ $DISK =~ ^/dev/nvme.* ]]; then
+                if [[ "$SWAP" == "1" ]]; then
+                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p3) rw" >> /mnt/boot/loader/entries/arch.conf
+                else
+                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p2) rw" >> /mnt/boot/loader/entries/arch.conf
+                fi
             else
-               echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p2) rw" >> /mnt/boot/loader/entries/arch.conf
+                if [[ "$SWAP" == "1" ]]; then
+                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}3) rw" >> /mnt/boot/loader/entries/arch.conf
+                else
+                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}2) rw" >> /mnt/boot/loader/entries/arch.conf
+                fi
             fi
         else
-            if [[ "$SWAP" == "1" ]]; then
-                echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}3) rw" >> /mnt/boot/loader/entries/arch.conf
-            else
-                echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}2) rw" >> /mnt/boot/loader/entries/arch.conf
-            fi
-        fi
+            arch-chroot /mnt pacman -S --noconfirm grub efibootmgr &>> $LOGFILE
+            arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/ --bootloader-id="Boot Manager" --recheck &>> $LOGFILE
+            arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg &>> $LOGFILE
     then
         sleep 1
         kill $PID
@@ -935,78 +946,6 @@ Creating_SFile () {
 Info_Print "CREATING SWAP FILE."
 Creating_SFile
 echo "" &>> $LOGFILE
-
-# SET GRAPHICS DRIVER :
-# ~~~~~~~~~~~~~~~~~~~~~
-Setting_Graphics () {
-    Spin 15 SETTING &
-    PID=$!
-    if
-        GPU=$(lspci)
-        if grep -E "NVIDIA|GeForce" <<< ${GPU}; then
-            arch-chroot /mnt pacman -S --noconfirm nvidia nvidia-utils &>> $LOGFILE
-        elif lspci | grep 'VGA' | grep -E "Radeon|AMD"; then
-            arch-chroot /mnt pacman -S --noconfirm --needed xf86-video-amdgpu &>> $LOGFILE
-        elif grep -E "Integrated Graphics Controller" <<< ${GPU}; then
-            arch-chroot /mnt pacman -S --noconfirm --needed libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa &>> $LOGFILE
-        elif grep -E "Intel Corporation UHD" <<< ${GPU}; then
-            arch-chroot /mnt pacman -S --needed --noconfirm libva-intel-driver libvdpau-va-gl lib32-vulkan-intel vulkan-intel libva-intel-driver libva-utils lib32-mesa &>> $LOGFILE
-        fi
-    then
-        sleep 1
-        kill $PID
-        Done_Print "SETTING GRAPHICS DRIVER."
-    else
-        kill $PID
-        Warn_Print "SETTING GRAPHICS DRIVER."
-        exit 1
-    fi
-}
-
-Info_Print "SETTING GRAPHICS DRIVER."
-Setting_Graphics
-echo "" &>> $LOGFILE
-
-# SET VM GUEST TOOLS :
-# ~~~~~~~~~~~~~~~~~~~~
-Setting_VMTools () {
-    Spin 14 SETTING &
-    PID=$!
-    if
-        VM=$(systemd-detect-virt)
-        if [[ $VM == kvm ]]; then
-            arch-chroot /mnt pacman -S --noconfirm qemu-guest-agent &>> $LOGFILE
-            arch-chroot /mnt systemctl enable qemu-guest-agent &>> $LOGFILE
-        elif [[ $VM == vmware ]]; then
-            arch-chroot /mnt pacman -S --noconfirm open-vm-tools &>> $LOGFILE
-            arch-chroot /mnt systemctl enable vmtoolsd &>> $LOGFILE
-            arch-chroot /mnt systemctl enable vmware-vmblock-fuse &>> $LOGFILE
-        elif [[ $VM == oracle ]]; then
-            arch-chroot /mnt pacman -S --noconfirm virtualbox-guest-utils &>> $LOGFILE
-            arch-chroot /mnt systemctl enable vboxservice &>> $LOGFILE
-        elif [[ $VM == microsoft ]]; then
-            arch-chroot /mnt pacman -S --noconfirm hyperv &>> $LOGFILE
-            arch-chroot /mnt systemctl enable hv_fcopy_daemon &>> $LOGFILE
-            arch-chroot /mnt systemctl enable hv_kvp_daemon &>> $LOGFILE
-            arch-chroot /mnt systemctl enable hv_vss_daemon &>> $LOGFILE
-        fi
-    then
-        sleep 1
-        kill $PID
-        Done_Print "SETTING VM GUEST TOOLS."
-    else
-        kill $PID
-        Warn_Print "SETTING VM GUEST TOOLS."
-        exit 1
-    fi
-}
-
-if [[ "$VM" = "none" ]]; then
-else
-    Info_Print "SETTING VM GUEST TOOLS."
-    Setting_VMTools
-    echo
-fi
 
 # COPY LOG FILE :
 # ~~~~~~~~~~~~~~~
