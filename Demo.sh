@@ -19,18 +19,18 @@ DISK=/dev/sda                            # SET DISK FOR INSTALLATION
 
 # SET PARTITION SIZE :
 # ~~~~~~~~~~~~~~~~~~~~
-BOOTSIZE=550                            # SET BOOT PARTITION SIZE ( NOTE - SIZE IS IN MB )
-ROOTSIZE=15                             # SET ROOT PARTITION SIZE ( NOTE - SIZE IS IN GB )
-HOMESIZE=                               # REMAINING SPACE FOR HOME PARTITION
+BOOTSIZE=500                             # SET BOOT PARTITION SIZE ( NOTE - SIZE IS IN MB )
+ROOTSIZE=50                              # SET ROOT PARTITION SIZE ( NOTE - SIZE IS IN GB )
+HOMESIZE=                                # REMAINING SPACE FOR HOME PARTITION
 
 # SET SWAP SIZE :
 # ~~~~~~~~~~~~~~~
 SWAP=2                                   # 0 = NO SWAP , 1 = SWAP PARTITION & 2 = SWAP FILE 
-SWAPSIZE=2                              # SET SIZE OF SWAP PARTITION OR SWAP FILE ( NOTE - SIZE IS IN GB )
+SWAPSIZE=8                               # SET SIZE OF SWAP PARTITION OR SWAP FILE ( NOTE - SIZE IS IN GB )
 
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
-BOOTLOADER=1                            # 0 = GRUB & 1 = SYSTEMD-BOOT
+BOOTLOADER=1                             # 0 = GRUB & 1 = SYSTEMD-BOOT
 
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
@@ -163,6 +163,7 @@ echo
 # ~~~~~~~~~~~~~~~~~~
 if [ ! -d /sys/firmware/efi/efivars ]; then
     Warn_Print "YOU ARE NOT BOOTED IN UEFI."
+    echo
     exit 1
 fi
 
@@ -190,17 +191,20 @@ Variable_Checking () {
     elif [[ ! $DISK =~ ^/dev/.* ]]; then
         Warn_Print "SPECIFY THE VARIABLE DISK."
         exit 1
-    elif [[ $BOOT_SIZE -lt 500 ]]; then
+    elif [[ $BOOTSIZE -lt 500 ]]; then
         Warn_Print "SPECIFY VARIABLE BOOTSIZE."
         exit 1
-    elif [[ $ROOT_SIZE -lt 5 ]]; then
+    elif [[ $ROOTSIZE -lt 5 ]]; then
         Warn_Print "SPECIFY VARIABLE ROOTSIZE."
         exit 1
     elif [[ $SWAP != 0 && $SWAP != 1 && $SWAP != 2 ]]; then
         Warn_Print "SPECIFY THE VARIABLE SWAP."
         exit 1
-    elif [[ $SWAP_SIZE -lt 2 ]];  then
+    elif [[ $SWAPSIZE -lt 2 ]];  then
         Warn_Print "SPECIFY VARIABLE SWAPSIZE."
+        exit 1
+    elif [[ $BOOTLOADER != 0 && $BOOTLOADER != 1 ]]; then
+        Warn_Print "SPECIFY  VAR.  BOOTLOADER."
         exit 1
     elif [[ ! $KERNEL == linux* ]]; then
         Warn_Print "SPECIFY  VARIABLE  KERNEL."
@@ -211,7 +215,8 @@ Variable_Checking () {
 
 Info_Print "CHECKING NEEDED VARIABLES."
 Variable_Checking
-echo "" &>> $LOGFILE
+echo "CHECKING NEEDED VARIABLES." &>> $LOGFILE
+echo
 
 # SYNC TIME AND DATE :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -233,7 +238,8 @@ Setting_DTime () {
 
 Info_Print "SYNCING TIME AND DATE."
 Setting_DTime
-echo "" &>> $LOGFILE
+echo "SYNCING TIME AND DATE." &>> $LOGFILE
+echo
 
 # INITIALISING KEYRING :
 # ~~~~~~~~~~~~~~~~~~~~~~
@@ -259,7 +265,8 @@ Initialising_KRings () {
 
 Info_Print "INITIALISING KEYRINGS."
 Initialising_KRings
-echo "" &>> $LOGFILE
+echo "INITIALISING KEYRINGS." &>> $LOGFILE
+echo
 
 # WIPE THE DISK :
 # ~~~~~~~~~~~~~~~
@@ -285,7 +292,8 @@ Wiping_Drive () {
 
 Info_Print "WIPING DISK."
 Wiping_Drive
-echo "" &>> $LOGFILE
+echo "WIPING DISK." &>> $LOGFILE
+echo
 
 
 # PARTITION THE DISK :
@@ -326,8 +334,8 @@ Creating_Partition () {
 
 Info_Print "CREATING PARTITIONS."
 Creating_Partition
-echo "" &>> $LOGFILE
-
+echo "CREATING PARTITIONS." &>> $LOGFILE
+echo
 
 # FORMAT THE PARTITIONS :
 # ~~~~~~~~~~~~~~~~~~~~~~~
@@ -371,7 +379,8 @@ Formatting_Partition () {
 
 Info_Print "FORMATTING PARTITIONS."
 Formatting_Partition
-echo "" &>> $LOGFILE
+echo "FORMATTING PARTITIONS." &>> $LOGFILE
+echo
 
 # MOUNT THE PARTITIONS :
 # ~~~~~~~~~~~~~~~~~~~~~~
@@ -424,20 +433,35 @@ Mounting_Partition () {
 
 Info_Print "MOUNTING PARTITIONS."
 Mounting_Partition
-echo "" &>> $LOGFILE
+echo "MOUNTING PARTITIONS." &>> $LOGFILE
+echo
 
 # DETECT MICROCODE :
 # ~~~~~~~~~~~~~~~~~~
 Microcode_Detect () {
-    CPU=$(grep vendor_id /proc/cpuinfo)
-    if [[ "$CPU" == *"AuthenticAMD"* ]]; then
-        MICROCODE="amd-ucode"
-    elif [[ "$CPU" == *"GenuineIntel"* ]]; then
-        MICROCODE="intel-ucode"
+    Spin 9 CHECKING &
+    PID=$!
+    if
+        CPU=$(grep vendor_id /proc/cpuinfo)
+        if [[ "$CPU" == *"AuthenticAMD"* ]]; then
+            MICROCODE="amd-ucode"
+        elif [[ "$CPU" == *"GenuineIntel"* ]]; then
+            MICROCODE="intel-ucode"
+        fi
+    then
+        sleep 1
+        kill $PID
+        Done_Print "CHECKING MICROCODE."
+    else
+        sleep 1
+        kill $PID
+        Done_Print "CHECKING MICROCODE."
     fi
 }
-
+Info_Print "CHECKING MICROCODE."
 Microcode_Detect
+echo "CHECKING MICROCODE." &>> $LOGFILE
+echo
 
 # INSTALLING BASE SYSTEM :
 # ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -459,7 +483,8 @@ Installing_Base () {
 
 Info_Print "INSTALLING BASE SYSTEM."
 Installing_Base
-echo "" &>> $LOGFILE
+echo "INSTALLING BASE SYSTEM." &>> $LOGFILE
+echo
 
 # GENERATE THE FSTAB FILE :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -481,7 +506,8 @@ Generating_FTab () {
 
 Info_Print "GENERATING FSTAB FILE."
 Generating_FTab
-echo "" &>> $LOGFILE
+echo "GENERATING FSTAB FILE." &>> $LOGFILE
+echo
 
 # ---------------------------------------------------------- #
 # ----------------- CHROOT START FROM HERE ----------------- #
@@ -509,7 +535,8 @@ Setting_Timezone () {
 
 Info_Print "SETTING TIME-ZONE."
 Setting_Timezone
-echo "" &>> $LOGFILE
+echo "SETTING TIME-ZONE." &>> $LOGFILE
+echo
 
 # GENERATE LOCALE :
 # ~~~~~~~~~~~~~~~~~
@@ -532,7 +559,8 @@ Generating_Locale () {
 
 Info_Print "GENERATING LOCALE."
 Generating_Locale
-echo "" &>> $LOGFILE
+echo "GENERATING LOCALE." &>> $LOGFILE
+echo
 
 # SET LOCALE UNITS :
 # ~~~~~~~~~~~~~~~~~~
@@ -566,7 +594,8 @@ Setting_Locale () {
 
 Info_Print "SETTING LOCALE UNITS."
 Setting_Locale
-echo "" &>> $LOGFILE
+echo "SETTING LOCALE UNITS." &>> $LOGFILE
+echo
 
 # SET HOST-NAME :
 # ~~~~~~~~~~~~~~~
@@ -588,7 +617,8 @@ Setting_Hostname () {
 
 Info_Print "SETTING HOST-NAME."
 Setting_Hostname
-echo "" &>> $LOGFILE
+echo "SETTING HOST-NAME." &>> $LOGFILE
+echo
 
 # SET HOSTS :
 # ~~~~~~~~~~~
@@ -612,7 +642,8 @@ Setting_Hosts () {
 
 Info_Print "SETTING HOSTS FILE."
 Setting_Hosts
-echo "" &>> $LOGFILE
+echo "SETTING HOSTS FILE." &>> $LOGFILE
+echo
 
 # SET CONSOLE KEYMAP :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -635,7 +666,8 @@ Setting_Console () {
 
 Info_Print "SETTING CONSOLE KEYMAP."
 Setting_Console
-echo "" &>> $LOGFILE
+echo "SETTING CONSOLE KEYMAP." &>> $LOGFILE
+echo
 
 # EDIT PACMAN CONFIG:
 # ~~~~~~~~~~~~~~~~~~~
@@ -661,7 +693,8 @@ Editing_Pacman () {
 
 Info_Print "EDITING PACMAN CONFIG."
 Editing_Pacman
-echo "" &>> $LOGFILE
+echo "EDITING PACMAN CONFIG." &>> $LOGFILE
+echo
 
 # SYNC FASTEST MIRRORS :
 # ~~~~~~~~~~~~~~~~~~~~~~
@@ -690,7 +723,8 @@ Setting_Reflector () {
 
 Info_Print "SYNCING FASTEST MIRRORS."
 Setting_Reflector
-echo "" &>> $LOGFILE
+echo "SYNCING FASTEST MIRRORS." &>> $LOGFILE
+echo
 
 # SET NETWORK MANAGER :
 # ~~~~~~~~~~~~~~~~~~~~~
@@ -713,7 +747,8 @@ Setting_NManager () {
 
 Info_Print "SETTING NETWORK MANAGER."
 Setting_NManager
-echo "" &>> $LOGFILE
+echo "SETTING NETWORK MANAGER." &>> $LOGFILE
+echo
 
 # NO WATCH-DOG :
 # ~~~~~~~~~~~~~~
@@ -735,7 +770,8 @@ Disabling_WDog () {
 
 Info_Print "DISABLING WATCH-DOG LOG."
 Disabling_WDog
-echo "" &>> $LOGFILE
+echo "DISABLING WATCH-DOG LOG." &>> $LOGFILE
+echo
 
 # REDUCE SHUTDOWN TIME :
 # ~~~~~~~~~~~~~~~~~~~~~~
@@ -757,7 +793,8 @@ Reducing_STime () {
 
 Info_Print "REDUCING SHUTDOWN TIME."
 Reducing_STime
-echo "" &>> $LOGFILE
+echo "REDUCING SHUTDOWN TIME." &>> $LOGFILE
+echo
 
 # RE-INITIALIZE INITRAMFS :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -779,7 +816,8 @@ Initialising_Kernel () {
 
 Info_Print "RE-INITIALISING INITRAMFS."
 Initialising_Kernel
-echo "" &>> $LOGFILE
+echo "RE-INITIALISING INITRAMFS." &>> $LOGFILE
+echo
 
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
@@ -825,7 +863,8 @@ Setting_BLoader () {
 
 Info_Print "SETTING BOOT LOADER."
 Setting_BLoader
-echo "" &>> $LOGFILE
+echo "SETTING BOOT LOADER." &>> $LOGFILE
+echo
 
 # INSTALL PACKAGES :
 # ~~~~~~~~~~~~~~~~~~
@@ -846,7 +885,8 @@ Installing_Extra () {
 }
 Info_Print "INSTALLING EXTRA PACKAGES."
 Installing_Extra
-echo "" &>> $LOGFILE
+echo "INSTALLING EXTRA PACKAGES." &>> $LOGFILE
+echo
 
 # SET ROOT PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
@@ -870,7 +910,8 @@ echo -en "${BCYAN}! NOTE !${BYELO} - ENTER ROOT PASSWORD :  ${RESET}"
 read ROOTPASSWORD
 Info_Print "SETTING ROOT PASSWORD."
 Setting_RPassWd
-echo "" &>> $LOGFILE
+echo "SETTING ROOT PASSWORD." &>> $LOGFILE
+echo
 
 # CREATE USER ACCOUNT :
 # ~~~~~~~~~~~~~~~~~~~~~
@@ -894,7 +935,8 @@ Creating_Account () {
 
 Info_Print "CREATING USER ACCOUNT."
 Creating_Account
-echo "" &>> $LOGFILE
+echo "CREATING USER ACCOUNT." &>> $LOGFILE
+echo
 
 # SET USER PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
@@ -918,7 +960,8 @@ echo -en "${BCYAN}! NOTE !${BYELO} - ENTER USER PASSWORD :  ${RESET}"
 read USERPASSWORD
 Info_Print "SETTING USER PASSWORD."
 Setting_UPassWd
-echo "" &>> $LOGFILE
+echo "SETTING USER PASSWORD." &>> $LOGFILE
+echo
 
 # CREATING SWAP FILE :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -947,7 +990,8 @@ Creating_SFile () {
 
 Info_Print "CREATING SWAP FILE."
 Creating_SFile
-echo "" &>> $LOGFILE
+echo "CREATING SWAP FILE." &>> $LOGFILE
+echo
 
 # COPY LOG FILE :
 # ~~~~~~~~~~~~~~~
@@ -955,7 +999,7 @@ Coping_Logs () {
     Spin 8 COPING &
     PID=$!
     if
-        cp -r Installer.log /mnt/
+        cp Installer.log /mnt/
     then
         sleep 1
         kill $PID
@@ -969,4 +1013,4 @@ Coping_Logs () {
 
 Info_Print "COPING LOG FILE."
 Coping_Logs
-echo "" &>> $LOGFILE
+echo
