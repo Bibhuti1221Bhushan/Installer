@@ -3,6 +3,7 @@
 # WORKING ON THIS SCRIPT :
 Creating_SFile
 
+curl -o Demo.sh https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Demo.sh
 
 # INTEL
 mesa 
