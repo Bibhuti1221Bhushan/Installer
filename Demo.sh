@@ -197,7 +197,6 @@ Variable_Checking () {
         exit 1
     elif [[ $SWAP_SIZE -lt 2 ]];  then
         Warn_Print "PLEASE EDIT & SPECIFY VARIABLE SWAP_SIZE."
-        sleep 5
         exit 1
     elif [[ ! $KERNEL == linux* ]]; then
         Warn_Print "PLEASE EDIT & SPECIFY VARIABLE KERNEL."
@@ -208,7 +207,7 @@ Variable_Checking () {
 
 Info_Print "CHECKING VARIABLE."
 Variable_Checking
-echo
+echo "" &>> $LOGFILE
 
 # SYNC TIME AND DATE :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -230,7 +229,7 @@ Date_Time () {
 
 Info_Print "SYNCING TIME AND DATE."
 Date_Time
-echo
+echo "" &>> $LOGFILE
 
 # UPDATE KEYRING :
 # ~~~~~~~~~~~~~~~~
@@ -252,7 +251,7 @@ KRings () {
 
 Info_Print "UPDATING KEYRINGS."
 KRings
-echo
+echo "" &>> $LOGFILE
 
 # WIPE THE DISK :
 # ~~~~~~~~~~~~~~~
@@ -278,7 +277,7 @@ Wiping_Drive () {
 
 Info_Print "WIPING DISK."
 Wiping_Drive
-echo
+echo "" &>> $LOGFILE
 
 
 # PARTITION THE DISK :
@@ -319,7 +318,7 @@ Creating_Partition () {
 
 Info_Print "CREATING PARTITIONS."
 Creating_Partition
-echo
+echo "" &>> $LOGFILE
 
 
 # FORMAT THE PARTITIONS :
@@ -364,7 +363,7 @@ Formatting_Partition () {
 
 Info_Print "FORMATTING PARTITIONS."
 Formatting_Partition
-echo
+echo "" &>> $LOGFILE
 
 # MOUNT THE PARTITIONS :
 # ~~~~~~~~~~~~~~~~~~~~~~
@@ -417,7 +416,7 @@ Mounting_Partition () {
 
 Info_Print "MOUNTING PARTITIONS."
 Mounting_Partition
-echo
+echo "" &>> $LOGFILE
 
 # DETECT MICROCODE :
 # ~~~~~~~~~~~~~~~~~~
@@ -452,7 +451,7 @@ Installing_Base () {
 
 Info_Print "INSTALLING BASE SYSTEM."
 Installing_Base
-echo
+echo "" &>> $LOGFILE
 
 # GENERATE THE FSTAB FILE :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -474,7 +473,7 @@ Generating_FTab () {
 
 Info_Print "GENERATING FSTAB FILE."
 Generating_FTab
-echo
+echo "" &>> $LOGFILE
 
 # ---------------------------------------------------------- #
 # ----------------- CHROOT START FROM HERE ----------------- #
@@ -502,7 +501,7 @@ Setting_Timezone () {
 
 Info_Print "SETTING TIME-ZONE."
 Setting_Timezone
-echo
+echo "" &>> $LOGFILE
 
 # GENERATE LOCALE :
 # ~~~~~~~~~~~~~~~~~
@@ -525,7 +524,7 @@ Generating_Locale () {
 
 Info_Print "GENERATING LOCALE."
 Generating_Locale
-echo
+echo "" &>> $LOGFILE
 
 # SET LOCALE UNITS :
 # ~~~~~~~~~~~~~~~~~~
@@ -559,7 +558,7 @@ Setting_Locale () {
 
 Info_Print "SETTING LOCALE UNITS."
 Setting_Locale
-echo
+echo "" &>> $LOGFILE
 
 # SET HOST-NAME :
 # ~~~~~~~~~~~~~~~
@@ -581,7 +580,7 @@ Setting_Hostname () {
 
 Info_Print "SETTING HOST-NAME."
 Setting_Hostname
-echo
+echo "" &>> $LOGFILE
 
 # SET HOSTS :
 # ~~~~~~~~~~~
@@ -605,7 +604,7 @@ Setting_Hosts () {
 
 Info_Print "SETTING HOSTS FILE."
 Setting_Hosts
-echo
+echo "" &>> $LOGFILE
 
 # SET CONSOLE KEYMAP :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -628,7 +627,7 @@ Setting_Console () {
 
 Info_Print "SETTING CONSOLE KEYMAP."
 Setting_Console
-echo
+echo "" &>> $LOGFILE
 
 # EDIT PACMAN CONFIG:
 # ~~~~~~~~~~~~~~~~~~~
@@ -654,7 +653,7 @@ Editing_Pacman () {
 
 Info_Print "EDITING PACMAN CONFIG."
 Editing_Pacman
-echo
+echo "" &>> $LOGFILE
 
 # SYNC FASTEST MIRRORS :
 # ~~~~~~~~~~~~~~~~~~~~~~
@@ -683,7 +682,7 @@ Setting_Reflector () {
 
 Info_Print "SYNCING FASTEST MIRRORS."
 Setting_Reflector
-echo
+echo "" &>> $LOGFILE
 
 # SET NETWORK MANAGER :
 # ~~~~~~~~~~~~~~~~~~~~~
@@ -706,7 +705,7 @@ Setting_NManager () {
 
 Info_Print "SETTING NETWORK MANAGER."
 Setting_NManager
-echo
+echo "" &>> $LOGFILE
 
 # NO WATCH-DOG :
 # ~~~~~~~~~~~~~~
@@ -728,7 +727,7 @@ Disabling_WDog () {
 
 Info_Print "DISABLING WATCH-DOG LOG."
 Disabling_WDog
-echo
+echo "" &>> $LOGFILE
 
 # REDUCE SHUTDOWN TIME :
 # ~~~~~~~~~~~~~~~~~~~~~~
@@ -750,7 +749,7 @@ Reducing_STime () {
 
 Info_Print "REDUCING SHUTDOWN TIME."
 Reducing_STime
-echo
+echo "" &>> $LOGFILE
 
 # RE-INITIALIZE INITRAMFS :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -772,7 +771,7 @@ Initialising_Kernel () {
 
 Info_Print "RE-INITIALISING INITRAMFS."
 Initialising_Kernel
-echo
+echo "" &>> $LOGFILE
 
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
@@ -783,11 +782,23 @@ Setting_BLoader () {
         arch-chroot /mnt bootctl install --esp-path=/boot/ &>> $LOGFILE
         echo "default arch.conf" >> /mnt/boot/loader/loader.conf
         echo "timeout 0" >> /mnt/boot/loader/loader.conf
-        echo "title   Boot Manager" >> /mnt/boot/loader/entries/arch.conf
+        echo "title   ARCH LINUX" >> /mnt/boot/loader/entries/arch.conf
         echo "linux   /vmlinuz-$KERNEL" >> /mnt/boot/loader/entries/arch.conf
         echo "initrd  /$MICROCODE.img" >> /mnt/boot/loader/entries/arch.conf
         echo "initrd  /initramfs-$KERNEL.img" >> /mnt/boot/loader/entries/arch.conf
-        echo "options root="LABEL=ROOT" rw" >> /mnt/boot/loader/entries/arch.conf
+        if [[ $DISK =~ ^/dev/nvme.* ]]; then
+            if [[ "$SWAP" == "1" ]]; then
+               echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p3) rw" >> /mnt/boot/loader/entries/arch.conf
+            else
+               echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p2) rw" >> /mnt/boot/loader/entries/arch.conf
+            fi
+        else
+            if [[ "$SWAP" == "1" ]]; then
+                echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}3) rw" >> /mnt/boot/loader/entries/arch.conf
+            else
+                echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}2) rw" >> /mnt/boot/loader/entries/arch.conf
+            fi
+        fi
     then
         sleep 1
         kill $PID
@@ -801,7 +812,7 @@ Setting_BLoader () {
 
 Info_Print "SETTING BOOT LOADER."
 Setting_BLoader
-echo
+echo "" &>> $LOGFILE
 
 # INSTALL PACKAGES :
 # ~~~~~~~~~~~~~~~~~~
@@ -822,7 +833,7 @@ Installing_Extra () {
 }
 Info_Print "INSTALLING EXTRA PACKAGES."
 Installing_Extra
-echo
+echo "" &>> $LOGFILE
 
 # SET ROOT PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
@@ -846,7 +857,7 @@ echo -en "${BCYAN}! NOTE !${BYELO} - ENTER ROOT PASSWORD :  ${RESET}"
 read ROOT_PASSWORD
 Info_Print "SETTING ROOT PASSWORD."
 Setting_RPassWd
-echo
+echo "" &>> $LOGFILE
 
 # CREATE USER ACCOUNT :
 # ~~~~~~~~~~~~~~~~~~~~~
@@ -854,7 +865,8 @@ Creating_Account () {
     Spin 12 CREATING &
     PID=$!
     if
-        arch-chroot /mnt useradd -m -G wheel,audio,video,storage,network,power,optical -c "${NICKNAME}" -s /bin/bash "${USERNAME}"
+        groupadd libvirt
+        arch-chroot /mnt useradd -m -G wheel,audio,video,storage,network,power,optical,libvirt -c "${NICKNAME}" -s /bin/bash "${USERNAME}"
         sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /mnt/etc/sudoers
     then
         sleep 1
@@ -869,7 +881,7 @@ Creating_Account () {
 
 Info_Print "CREATING USER ACCOUNT."
 Creating_Account
-echo
+echo "" &>> $LOGFILE
 
 # SET USER PASSWORD :
 # ~~~~~~~~~~~~~~~~~~~
@@ -893,9 +905,7 @@ echo -en "${BCYAN}! NOTE !${BYELO} - ENTER USER PASSWORD :  ${RESET}"
 read USER_PASSWORD
 Info_Print "SETTING USER PASSWORD."
 Setting_UPassWd
-echo
-
-
+echo "" &>> $LOGFILE
 
 # CREATING SWAP FILE :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -924,7 +934,7 @@ Creating_SFile () {
 
 Info_Print "CREATING SWAP FILE."
 Creating_SFile
-echo
+echo "" &>> $LOGFILE
 
 # SET GRAPHICS DRIVER :
 # ~~~~~~~~~~~~~~~~~~~~~
@@ -955,7 +965,7 @@ Setting_Graphics () {
 
 Info_Print "SETTING GRAPHICS DRIVER."
 Setting_Graphics
-echo
+echo "" &>> $LOGFILE
 
 # SET VM GUEST TOOLS :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -964,17 +974,17 @@ Setting_VMTools () {
     PID=$!
     if
         VM=$(systemd-detect-virt)
-        if [[ $VM =~ kvm ]]; then
+        if [[ $VM == kvm ]]; then
             arch-chroot /mnt pacman -S --noconfirm qemu-guest-agent &>> $LOGFILE
             arch-chroot /mnt systemctl enable qemu-guest-agent &>> $LOGFILE
-        elif [[ $VM =~ vmware ]]; then
+        elif [[ $VM == vmware ]]; then
             arch-chroot /mnt pacman -S --noconfirm open-vm-tools &>> $LOGFILE
             arch-chroot /mnt systemctl enable vmtoolsd &>> $LOGFILE
             arch-chroot /mnt systemctl enable vmware-vmblock-fuse &>> $LOGFILE
-        elif [[ $VM =~ oracle ]]; then
+        elif [[ $VM == oracle ]]; then
             arch-chroot /mnt pacman -S --noconfirm virtualbox-guest-utils &>> $LOGFILE
             arch-chroot /mnt systemctl enable vboxservice &>> $LOGFILE
-        elif [[ $VM =~ microsoft ]]; then
+        elif [[ $VM == microsoft ]]; then
             arch-chroot /mnt pacman -S --noconfirm hyperv &>> $LOGFILE
             arch-chroot /mnt systemctl enable hv_fcopy_daemon &>> $LOGFILE
             arch-chroot /mnt systemctl enable hv_kvp_daemon &>> $LOGFILE
@@ -991,7 +1001,7 @@ Setting_VMTools () {
     fi
 }
 
-If [[ "$VM" = "none" ]]; then
+if [[ "$VM" = "none" ]]; then
 else
     Info_Print "SETTING VM GUEST TOOLS."
     Setting_VMTools
@@ -1018,4 +1028,4 @@ Coping_Logs () {
 
 Info_Print "COPING LOG FILE."
 Coping_Logs
-echo
+echo "" &>> $LOGFILE
