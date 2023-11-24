@@ -15,7 +15,7 @@ LOCALE="en_US.UTF-8"                     # SET LOCALE
 
 # SET DISK VARIABLES :
 # ~~~~~~~~~~~~~~~~~~~~
-DISK=/dev/vda                            # SET DISK FOR INSTALLATION
+DISK=/dev/sda                            # SET DISK FOR INSTALLATION
 
 # SET PARTITION SIZE :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -58,15 +58,15 @@ RESET="\e[0m"
 # PRETTY PRINT FUNCTIONS :
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 Info_Print () {
-    echo -ne "\r${BCYAN}! NOTE !${BYELO} - $1${RESET}\n"
+    echo -ne "\r${BCYAN}          ! NOTE !${BYELO} - $1${RESET}\n"
 }
 
 Done_Print () {
-    echo -ne "\r${BGREE}! DONE !${BBLUE} - $1${RESET}\n"
+    echo -ne "\r${BGREE}          ! DONE !${BBLUE} - $1${RESET}\n"
 }
 
 Warn_Print () {
-    echo -ne "\r${BREDD}! WARN !${BBLUE} - $1${RESET}\n"
+    echo -ne "\r${BREDD}          ! WARN !${BBLUE} - $1${RESET}\n"
 }
 
 # TITLE PRINT FUNCTION :
@@ -128,7 +128,7 @@ Spin(){
       do
         for INTERVAL in ${SPIN[@]};
         do
-          echo -ne "\r${BYELO}! WAIT ! - ${BBLUE}${2}${RESET}${BGREE} ${INTERVAL}${RESET}";
+          echo -ne "\r${BYELO}          ! WAIT ! - ${BBLUE}${2}${RESET}${BGREE} ${INTERVAL}${RESET}";
           sleep 0.3;
         done;
     done
@@ -911,7 +911,7 @@ Setting_RPassWd () {
     fi
 }
 
-echo -en "${BCYAN}! NOTE !${BYELO} - ENTER ROOT PASSWORD :  ${RESET}"
+echo -en "${BCYAN}          ! NOTE !${BYELO} - ENTER ROOT PASSWORD :  ${RESET}"
 read ROOTPASSWORD
 echo
 Info_Print "SETTING ROOT PASSWORD."
@@ -961,7 +961,7 @@ Setting_UPassWd () {
     fi
 }
 
-echo -en "${BCYAN}! NOTE !${BYELO} - ENTER USER PASSWORD :  ${RESET}"
+echo -en "${BCYAN}          ! NOTE !${BYELO} - ENTER USER PASSWORD :  ${RESET}"
 read USERPASSWORD
 echo
 Info_Print "SETTING USER PASSWORD."
