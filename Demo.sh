@@ -921,9 +921,7 @@ Creating_Account () {
     Spin 12 CREATING &
     PID=$!
     if
-        groupadd libvirt
-        sleep 1
-        arch-chroot /mnt useradd -mG wheel,audio,video,storage,network,power,optical,libvirt -c "${NICKNAME}" -s /bin/bash "${USERNAME}"
+        arch-chroot /mnt useradd -mG wheel,audio,video,storage,network,power,optical -c "${NICKNAME}" -s /bin/bash "${USERNAME}"
         sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /mnt/etc/sudoers
     then
         sleep 1
