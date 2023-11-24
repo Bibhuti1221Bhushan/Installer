@@ -4,6 +4,29 @@
 Creating_SFile
 
 
+# INTEL
+mesa 
+lib32-mesa 
+vulkan-intel
+lib32-vulkan-intel
+libva-intel-driver 
+lib32-libva-intel-driver
+libva-utils 
+libvdpau-va-gl 
+
+# AMD
+mesa lib32-mesa mesa-vdpau lib32-mesa-vdpau libva-mesa-driver lib32-libva-mesa-driver xf86-video-amdgpu 
+
+# ATI
+mesa 
+lib32-mesa 
+mesa-vdpau 
+lib32-mesa-vdpau 
+libva-mesa-driver
+lib32-libva-mesa-driver
+xf86-video-ati
+
+
 # ENABLE SERVICES :
 arch-chroot /mnt systemctl enable systemd-timesyncd.service &>> $LOGFILE
 arch-chroot /mnt systemctl enable fstrim.timer &>> $LOGFILE

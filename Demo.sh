@@ -20,17 +20,17 @@ DISK=/dev/vda                            # SET DISK FOR INSTALLATION
 # SET PARTITION SIZE :
 # ~~~~~~~~~~~~~~~~~~~~
 BOOTSIZE=500                             # SET BOOT PARTITION SIZE ( NOTE - SIZE IS IN MB )
-ROOTSIZE=15                              # SET ROOT PARTITION SIZE ( NOTE - SIZE IS IN GB )
+ROOTSIZE=50                              # SET ROOT PARTITION SIZE ( NOTE - SIZE IS IN GB )
 HOMESIZE=                                # REMAINING SPACE FOR HOME PARTITION
 
 # SET SWAP SIZE :
 # ~~~~~~~~~~~~~~~
 SWAP=2                                   # 0 = NO SWAP , 1 = SWAP PARTITION & 2 = SWAP FILE 
-SWAPSIZE=4                               # SET SIZE OF SWAP PARTITION OR SWAP FILE ( NOTE - SIZE IS IN GB )
+SWAPSIZE=8                               # SET SIZE OF SWAP PARTITION OR SWAP FILE ( NOTE - SIZE IS IN GB )
 
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
-BOOTLOADER=0                             # 0 = GRUB & 1 = SYSTEMD-BOOT
+BOOTLOADER=1                             # 0 = GRUB & 1 = SYSTEMD-BOOT
 
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
@@ -145,18 +145,9 @@ clear
 # TITLE SHOW :
 # ~~~~~~~~~~~~
 echo
-Title_Print 80 "@@@@@@@@   @@@@@@    @@@@@@   @@@ @@@      @@@@@@   @@@@@@@    @@@@@@@  @@@  @@@"
-Title_Print 80 "@@@@@@@@  @@@@@@@@  @@@@@@@   @@@ @@@     @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@  @@@"
-Title_Print 80 "@@!       @@!  @@@  !@@       @@! !@@     @@!  @@@  @@!  @@@  !@@       @@!  @@@"
-Title_Print 80 "!@!       !@!  @!@  !@!       !@! @!!     !@!  @!@  !@!  @!@  !@!       !@!  @!@"
-Title_Print 80 "@!!!:!    @!@!@!@!  !!@@!!     !@!@!      @!@!@!@!  @!@!!@!   !@!       @!@!@!@!"
-Title_Print 80 "!!!!!:    !!!@!!!!   !!@!!!     @!!!      !!!@!!!!  !!@!@!    !!!       !!!@!!!!"
-Title_Print 80 "!!:       !!:  !!!       !:!    !!:       !!:  !!!  !!: :!!   :!!       !!:  !!!"
-Title_Print 80 ":!:       :!:  !:!      !:!     :!:       :!:  !:!  :!:  !:!  :!:       :!:  !:!"
-Title_Print 80 ".:: ::::  ::   :::  :::: ::      ::       ::   :::  ::   :::   ::: :::  ::   :::"
-Title_Print 80 ": :: ::.  .:   : :  :: : :       :        .:   : :  .:   : :   :: :: :   :   : :"
-echo
-Title_Print 84 "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+Title_Print 13 "╔═══════════════╗"
+Title_Print 13 "║  ARCH INSTALL ║"
+Title_Print 13 "╚═══════════════╝"
 echo
 
 # VERIFY BOOT MODE :
