@@ -909,6 +909,7 @@ Setting_RPassWd () {
 
 echo -en "${BCYAN}! NOTE !${BYELO} - ENTER ROOT PASSWORD :  ${RESET}"
 read ROOTPASSWORD
+echo
 Info_Print "SETTING ROOT PASSWORD."
 Setting_RPassWd
 echo "SETTING ROOT PASSWORD." &>> $LOGFILE
@@ -921,7 +922,8 @@ Creating_Account () {
     PID=$!
     if
         groupadd libvirt
-        arch-chroot /mnt useradd -m -G wheel,audio,video,storage,network,power,optical,libvirt -c "${NICKNAME}" -s /bin/bash "${USERNAME}"
+        sleep 1
+        arch-chroot /mnt useradd -mG wheel,audio,video,storage,network,power,optical,libvirt -c "${NICKNAME}" -s /bin/bash "${USERNAME}"
         sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /mnt/etc/sudoers
     then
         sleep 1
@@ -959,6 +961,7 @@ Setting_UPassWd () {
 
 echo -en "${BCYAN}! NOTE !${BYELO} - ENTER USER PASSWORD :  ${RESET}"
 read USERPASSWORD
+echo
 Info_Print "SETTING USER PASSWORD."
 Setting_UPassWd
 echo "SETTING USER PASSWORD." &>> $LOGFILE
@@ -976,7 +979,7 @@ Creating_SFile () {
             arch-chroot /mnt chmod 600 /swap/swapfile &>> $LOGFILE
             arch-chroot /mnt mkswap /swap/swapfile &>> $LOGFILE
             arch-chroot /mnt swapon /swap/swapfile &>> $LOGFILE
-            echo '/swap/swapfile none swap sw 0 0' | tee -a /mnt/etc/fstab &>> $LOGFILE
+            echo '/swap/swapfile                      none       swap       sw 0 0' | tee -a /mnt/etc/fstab &>> $LOGFILE
         fi
     then
         sleep 1
