@@ -145,9 +145,9 @@ clear
 # TITLE SHOW :
 # ~~~~~~~~~~~~
 echo
-Title_Print 13 "╔═══════════════╗"
-Title_Print 13 "║  ARCH INSTALL ║"
-Title_Print 13 "╚═══════════════╝"
+Title_Print 17 "╔═══════════════╗"
+Title_Print 17 "║  ARCH INSTALL ║"
+Title_Print 17 "╚═══════════════╝"
 echo
 
 # VERIFY BOOT MODE :
@@ -503,6 +503,19 @@ echo
 # ---------------------------------------------------------- #
 # ----------------- CHROOT START FROM HERE ----------------- #
 # ---------------------------------------------------------- #
+
+# CLEAR TERMINAL :
+# ~~~~~~~~~~~~~~~~
+sleep 5
+clear
+
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo
+Title_Print 17 "╔═══════════════╗"
+Title_Print 17 "║  CHROOT ARCH  ║"
+Title_Print 17 "╚═══════════════╝"
+echo
 
 # SET TIME-ZONE :
 # ~~~~~~~~~~~~~~~
