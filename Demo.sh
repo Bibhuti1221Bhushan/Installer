@@ -15,22 +15,22 @@ LOCALE="en_US.UTF-8"                     # SET LOCALE
 
 # SET DISK VARIABLES :
 # ~~~~~~~~~~~~~~~~~~~~
-DISK=/dev/sda                            # SET DISK FOR INSTALLATION
+DISK=/dev/vda                            # SET DISK FOR INSTALLATION
 
 # SET PARTITION SIZE :
 # ~~~~~~~~~~~~~~~~~~~~
 BOOTSIZE=500                             # SET BOOT PARTITION SIZE ( NOTE - SIZE IS IN MB )
-ROOTSIZE=50                              # SET ROOT PARTITION SIZE ( NOTE - SIZE IS IN GB )
+ROOTSIZE=15                              # SET ROOT PARTITION SIZE ( NOTE - SIZE IS IN GB )
 HOMESIZE=                                # REMAINING SPACE FOR HOME PARTITION
 
 # SET SWAP SIZE :
 # ~~~~~~~~~~~~~~~
 SWAP=2                                   # 0 = NO SWAP , 1 = SWAP PARTITION & 2 = SWAP FILE 
-SWAPSIZE=8                               # SET SIZE OF SWAP PARTITION OR SWAP FILE ( NOTE - SIZE IS IN GB )
+SWAPSIZE=4                               # SET SIZE OF SWAP PARTITION OR SWAP FILE ( NOTE - SIZE IS IN GB )
 
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
-BOOTLOADER=1                             # 0 = GRUB & 1 = SYSTEMD-BOOT
+BOOTLOADER=0                             # 0 = GRUB & 1 = SYSTEMD-BOOT
 
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
@@ -247,7 +247,7 @@ Initialising_KRings () {
     Spin 8 INITIALISING &
     PID=$!
     if
-        killall gpg-agent
+        killall gpg-agent &>> $LOGFILE
         rm -rf /etc/pacman.d/gnupg/ &>> $LOGFILE
         pacman-key --init &>> $LOGFILE
         pacman-key --populate archlinux &>> $LOGFILE
@@ -850,6 +850,7 @@ Setting_BLoader () {
             arch-chroot /mnt pacman -S --noconfirm grub efibootmgr &>> $LOGFILE
             arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/ --bootloader-id="Boot Manager" --recheck &>> $LOGFILE
             arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg &>> $LOGFILE
+        fi
     then
         sleep 1
         kill $PID
