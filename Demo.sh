@@ -19,14 +19,14 @@ DISK=/dev/sda                            # SET DISK FOR INSTALLATION
 
 # SET PARTITION SIZE :
 # ~~~~~~~~~~~~~~~~~~~~
-BOOT_SIZE=550                            # SET BOOT PARTITION SIZE ( NOTE - SIZE IS IN MB )
-ROOT_SIZE=15                             # SET ROOT PARTITION SIZE ( NOTE - SIZE IS IN GB )
-HOME_SIZE=                               # REMAINING SPACE FOR HOME PARTITION
+BOOTSIZE=550                            # SET BOOT PARTITION SIZE ( NOTE - SIZE IS IN MB )
+ROOTSIZE=15                             # SET ROOT PARTITION SIZE ( NOTE - SIZE IS IN GB )
+HOMESIZE=                               # REMAINING SPACE FOR HOME PARTITION
 
 # SET SWAP SIZE :
 # ~~~~~~~~~~~~~~~
 SWAP=2                                   # 0 = NO SWAP , 1 = SWAP PARTITION & 2 = SWAP FILE 
-SWAP_SIZE=2                              # SET SIZE OF SWAP PARTITION OR SWAP FILE ( NOTE - SIZE IS IN GB )
+SWAPSIZE=2                              # SET SIZE OF SWAP PARTITION OR SWAP FILE ( NOTE - SIZE IS IN GB )
 
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
@@ -166,46 +166,46 @@ fi
 # ~~~~~~~~~~~~~~~~
 Variable_Checking () {
     if [[ -z "$USERNAME"  ]]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE USERNAME."
+        Warn_Print "SPECIFY VARIABLE USERNAME."
         exit 1
     elif [ -z "$NICKNAME" ]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE NICKNAME."
+        Warn_Print "SPECIFY VARIABLE NICKNAME."
         exit 1
     elif [ -z "$HOSTNAME" ]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE HOSTNAME."
+        Warn_Print "SPECIFY VARIABLE HOSTNAME."
         exit 1
     elif [ -z "$TIMEZONE" ]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE TIMEZONE."
+        Warn_Print "SPECIFY VARIABLE TIMEZONE."
         exit 1
     elif [ -z "$KEYBOARD" ]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE KEYBOARD."
+        Warn_Print "SPECIFY VARIABLE KEYBOARD."
         exit 1
     elif [ -z "$LOCALE" ]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE LOCALE."
+        Warn_Print "SPECIFY  VARIABLE  LOCALE."
         exit 1
     elif [[ ! $DISK =~ ^/dev/.* ]]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE DISK."
+        Warn_Print "SPECIFY THE VARIABLE DISK."
         exit 1
     elif [[ $BOOT_SIZE -lt 500 ]]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE BOOT_SIZE."
+        Warn_Print "SPECIFY VARIABLE BOOTSIZE."
         exit 1
     elif [[ $ROOT_SIZE -lt 5 ]]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE ROOT_SIZE."
+        Warn_Print "SPECIFY VARIABLE ROOTSIZE."
         exit 1
     elif [[ $SWAP != 0 && $SWAP != 1 && $SWAP != 2 ]]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE SWAP."
+        Warn_Print "SPECIFY THE VARIABLE SWAP."
         exit 1
     elif [[ $SWAP_SIZE -lt 2 ]];  then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE SWAP_SIZE."
+        Warn_Print "SPECIFY VARIABLE SWAPSIZE."
         exit 1
     elif [[ ! $KERNEL == linux* ]]; then
-        Warn_Print "PLEASE EDIT & SPECIFY VARIABLE KERNEL."
+        Warn_Print "SPECIFY  VARIABLE  KERNEL."
         exit 1
     fi
-    Done_Print "CHECKING VARIABLE."
+    Done_Print "CHECKING NEEDED VARIABLES."
 }
 
-Info_Print "CHECKING VARIABLE."
+Info_Print "CHECKING NEEDED VARIABLES."
 Variable_Checking
 echo "" &>> $LOGFILE
 
@@ -288,19 +288,19 @@ Creating_Partition () {
     if
         if [[ "$SWAP" == "1" ]]; then
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
-            parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"M &>> $LOGFILE
-            parted "$DISK" -s mkpart SWAP linux-swap "$BOOT_SIZE"M "$SWAP_SIZE"G &>> $LOGFILE
-            parted "$DISK" -s mkpart ROOT ext4 "$SWAP_SIZE"G "$ROOT_SIZE"G &>> $LOGFILE
-            parted "$DISK" -s mkpart HOME ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
+            parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOTSIZE"M &>> $LOGFILE
+            parted "$DISK" -s mkpart SWAP linux-swap "$BOOTSIZE"M "$SWAPSIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart ROOT ext4 "$SWAPSIZE"G "$ROOTSIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart HOME ext4 "$ROOTSIZE"G 100% &>> $LOGFILE
             parted "$DISK" -s set 1 esp on &>> $LOGFILE
             parted "$DISK" -s set 2 swap on &>> $LOGFILE
             parted "$DISK" -s set 3 root on &>> $LOGFILE
             parted "$DISK" -s set 4 linux-home on &>> $LOGFILE
         else
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
-            parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOT_SIZE"M &>> $LOGFILE
-            parted "$DISK" -s mkpart ROOT ext4 "$BOOT_SIZE"M "$ROOT_SIZE"G &>> $LOGFILE
-            parted "$DISK" -s mkpart HOME ext4 "$ROOT_SIZE"G 100% &>> $LOGFILE
+            parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOTSIZE"M &>> $LOGFILE
+            parted "$DISK" -s mkpart ROOT ext4 "$BOOTSIZE"M "$ROOTSIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart HOME ext4 "$ROOTSIZE"G 100% &>> $LOGFILE
             parted "$DISK" -s set 1 esp on &>> $LOGFILE
             parted "$DISK" -s set 2 root on &>> $LOGFILE
             parted "$DISK" -s set 3 linux-home on &>> $LOGFILE
@@ -782,7 +782,7 @@ Setting_BLoader () {
         arch-chroot /mnt bootctl install --esp-path=/boot/ &>> $LOGFILE
         echo "default arch.conf" >> /mnt/boot/loader/loader.conf
         echo "timeout 0" >> /mnt/boot/loader/loader.conf
-        echo "title   ARCH LINUX" >> /mnt/boot/loader/entries/arch.conf
+        echo "title   Arch Linux" >> /mnt/boot/loader/entries/arch.conf
         echo "linux   /vmlinuz-$KERNEL" >> /mnt/boot/loader/entries/arch.conf
         echo "initrd  /$MICROCODE.img" >> /mnt/boot/loader/entries/arch.conf
         echo "initrd  /initramfs-$KERNEL.img" >> /mnt/boot/loader/entries/arch.conf
@@ -841,7 +841,7 @@ Setting_RPassWd () {
     Spin 13 SETTING &
     PID=$!
     if
-        printf "%s\n%s" "${ROOT_PASSWORD}" "${ROOT_PASSWORD}" | arch-chroot /mnt passwd &>> $LOGFILE
+        printf "%s\n%s" "${ROOTPASSWORD}" "${ROOTPASSWORD}" | arch-chroot /mnt passwd &>> $LOGFILE
     then
         sleep 1
         kill $PID
@@ -854,7 +854,7 @@ Setting_RPassWd () {
 }
 
 echo -en "${BCYAN}! NOTE !${BYELO} - ENTER ROOT PASSWORD :  ${RESET}"
-read ROOT_PASSWORD
+read ROOTPASSWORD
 Info_Print "SETTING ROOT PASSWORD."
 Setting_RPassWd
 echo "" &>> $LOGFILE
@@ -889,7 +889,7 @@ Setting_UPassWd () {
     Spin 13 SETTING &
     PID=$!
     if
-        printf "%s\n%s" "${USER_PASSWORD}" "${USER_PASSWORD}" | arch-chroot /mnt passwd $USERNAME &>> $LOGFILE
+        printf "%s\n%s" "${USERPASSWORD}" "${USERPASSWORD}" | arch-chroot /mnt passwd $USERNAME &>> $LOGFILE
     then
         sleep 1
         kill $PID
@@ -902,7 +902,7 @@ Setting_UPassWd () {
 }
 
 echo -en "${BCYAN}! NOTE !${BYELO} - ENTER USER PASSWORD :  ${RESET}"
-read USER_PASSWORD
+read USERPASSWORD
 Info_Print "SETTING USER PASSWORD."
 Setting_UPassWd
 echo "" &>> $LOGFILE
@@ -915,7 +915,7 @@ Creating_SFile () {
     if
         if [[ "$SWAP" == "2" ]]; then
             mkdir -vp /mnt/swap &>> $LOGFILE
-            arch-chroot /mnt dd if=/dev/zero of=/swap/swapfile bs=1M count=$(("$SWAP_SIZE" * 1024)) &>> $LOGFILE
+            arch-chroot /mnt dd if=/dev/zero of=/swap/swapfile bs=1M count=$(("$SWAPSIZE" * 1024)) &>> $LOGFILE
             arch-chroot /mnt chmod 600 /swap/swapfile &>> $LOGFILE
             arch-chroot /mnt mkswap /swap/swapfile &>> $LOGFILE
             arch-chroot /mnt swapon /swap/swapfile &>> $LOGFILE
