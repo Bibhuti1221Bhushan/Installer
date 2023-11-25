@@ -5,6 +5,10 @@ Creating_SFile
 
 curl -o Demo.sh https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Demo.sh
 
+echo -e "[global-dns-domain-*]" >> /etc/NetworkManager/NetworkManager.conf
+echo -e "servers=::1,1.1.1.1" >> /etc/NetworkManager/NetworkManager.conf
+systemctl restart NetworkManager
+
 # INTEL
 mesa 
 lib32-mesa 
