@@ -5,9 +5,38 @@ Creating_SFile
 
 curl -o Demo.sh https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Demo.sh
 
+# DNS
 echo -e "[global-dns-domain-*]" >> /etc/NetworkManager/NetworkManager.conf
 echo -e "servers=::1,1.1.1.1" >> /etc/NetworkManager/NetworkManager.conf
 systemctl restart NetworkManager
+
+
+MOZ_ENABLE_WAYLAND=1
+QT_QPA_PLATFORM=wayland
+QT_QPA_PLATFORMTHEME=gtk2
+
+	# Video drivers
+	if [ "$VIDEO_DRIVER" = "intel" ]; then
+		packages="$packages mesa intel-media-driver libva-intel-driver intel-gpu-tools"
+	elif [ "$VIDEO_DRIVER" = "nouveau" ]; then
+		packages="$packages xf86-video-nouveau"
+	elif [ "$VIDEO_DRIVER" = "nvidia" ]; then
+		packages="$packages nvidia-dkms nvidia-utils nvidia-settings"
+	elif [ "$VIDEO_DRIVER" = "radeon" ]; then
+		packages="$packages xf86-video-ati"
+	elif [ "$VIDEO_DRIVER" = "vesa" ]; then
+		packages="$packages xf86-video-vesa"
+	elif [ "$VIDEO_DRIVER" = "vbox" ]; then
+		packages="$packages virtualbox-guest-utils"
+	fi
+
+
+	if [ "$VIDEO_DRIVER" = "intel" ]; then
+		echo "Configuring intel stuff"
+		sed -i "s/MODULES=()/MODULES=(intel_agp i915)/g" /etc/mkinitcpio.conf
+		echo "options i915 enable_guc=2 enable_fbc=1" >> /etc/modprobe.d/i915.conf
+		mkinitcpio -P
+	fi
 
 # INTEL
 mesa 
@@ -75,6 +104,7 @@ Setting_Graphics () {
 Info_Print "SETTING GRAPHICS DRIVER."
 Setting_Graphics
 echo "" &>> $LOGFILE
+
 
 # SET VM GUEST TOOLS :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -474,36 +504,165 @@ sed -i 's/^# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /etc/sudoers
 sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
 
+# check internet
+ping -c 1 archlinux.org &>/dev/null
+if [ $? -eq 1 ]; then
+  red "[-] Internet not connected"
+exit 1
+fi
 
 
 
 
+reflector --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
+reflector --latest 20 --age 24 --sort rate --protocol https --country $REFLECTOR_COUNTRY --save /etc/pacman.d/mirrorlist
+
+
+useradd -m users -G wheel,audio,video -s /bin/bash $username
 
 
 
+set_boot() {
+	if [ "$BOOTLOADER" = "grub" ]; then
+		pacman -S --noconfirm grub
+		if [ "$BOOT_TYPE" = "efi" ]; then
+			pacman -S --noconfirm efibootmgr
+			grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB_ARCH --removable
+		elif [ "$BOOT_TYPE" = "legacy" ]; then
+			grub-install --target=i386-pc "$DRIVE"
+		fi
+		grub-mkconfig -o /boot/grub/grub.cfg
+		echo "Disabling osprober"
+		echo " " >> /etc/default/grub
+		echo "# Disable osprober" >> /etc/default/grub
+		echo "GRUB_DISABLE_OS_PROBER=true" >> /etc/default/grub
+		grub-mkconfig -o /boot/grub/grub.cfg
 
 
 
+install_aur_helper() {
+	if [ "$AUR_HELPER" = "yay" ]; then
+		git clone https://aur.archlinux.org/yay-bin.git /yay
+		cd /yay
+		chown $USER_NAME:$USER_NAME /yay
+		sudo -u $USER_NAME makepkg -si --noconfirm
+		cd /
+		rm -rf /yay
+	elif [ "$AUR_HELPER" = "paru" ]; then
+		git clone https://aur.archlinux.org/paru-bin.git /paru
+		cd /paru
+		chown $USER_NAME:$USER_NAME /paru
+		sudo -u $USER_NAME makepkg -si --noconfirm
+		cd /
+		rm -rf /paru
+		cat >/etc/paru.conf <<EOF
+#
+# $PARU_CONF
+# /etc/paru.conf
+# ~/.config/paru/paru.conf
+#
+# See the paru.conf(5) manpage for options
+
+#
+# GENERAL OPTIONS
+#
+[options]
+PgpFetch
+Devel
+Provides
+DevelSuffixes = -git -cvs -svn -bzr -darcs -always
+#BottomUp
+RemoveMake
+SudoLoop
+UseAsk
+#CombinedUpgrade
+CleanAfter
+UpgradeMenu
+#NewsOnUpgrade
+SkipReview
+
+#LocalRepo
+#Chroot
+#Sign
+#SignDb
+
+#
+# Binary OPTIONS
+#
+#[bin]
+#FileManager = vifm
+#MFlags = --skippgpcheck
+#Sudo = doas
+EOF
+	fi
+}
+
+
+arch_chroot() {
+	cp "$0" /mnt/setup.sh
+	cp /etc/pacman.d/mirrorlist /mnt/etc/pacman.d/mirrorlist
+	arch-chroot /mnt bash -c "./setup.sh chroot $BOOT_TYPE"
+
+	if [ -f /mnt/setup.sh ]; then
+		echo 'ERROR: Something failed inside the chroot, not unmounting filesystems so you can investigate.'
+		echo 'Make sure you unmount everything before you try to run this script again.'
+	else
+		echo 'Unmounting filesystems'
+		unmount_filesystems
+		echo 'DONE!'
+		echo 'Reboot the system.'
+	fi
+
+}
+
+set_sudoers() {
+	cat >/etc/sudoers <<EOF
+# /etc/sudoers
+#
+# This file MUST be edited with the 'visudo' command as root.
+#
+# See the man page for details on how to write a sudoers file.
+#
+
+Defaults env_reset
+Defaults pwfeedback
+Defaults passwd_timeout=0
+Defaults lecture="never"
+#Defaults editor=/usr/bin/micro
+Defaults insults
+
+root   ALL=(ALL) ALL
+%wheel ALL=(ALL) ALL
+EOF
+}
+
+disable_pc_speaker() {
+	echo "blacklist pcspkr" >>/etc/modprobe.d/nobeep.conf
+}
+
+check_connection() {
+  if ! nc -zw1 archlinux.org 443; then
+    echo "ERROR: No internet connection. Check your internet connection and try again."
+    exit 1
+  fi
+}
 
 
 
+# Essential packages
+BASE_PACKAGES=('base' 'base-devel' 'iwd' 'linux' 'linux-firmware' 'grub' 'networkmanager')
+BASE_ESSENTIALS=('man-db' 'man-pages' 'texinfo' 'nano')
+# Packages that will be installed whenever a GUI is installed
+DESKTOP_DEFAULTS=('gvfs'  'pavucontrol' 'pulseaudio' 'pulseaudio-alsa' 'ttf-dejavu' 'xdg-user-dirs' 'xf86-input-libinput' 'xorg-apps' 'xorg-server' 'xterm')
+
+noto-fonts noto-fonts-emoji ttf-dejavu ttf-hack ttf-droid ttf-ubuntu-font-family
+
+reflector htop rfkill sudo unrar unzip wget zip xdg-user-dirs exa fish git pacman-contrib bc
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+sgdisk --zap-all "$DISK" &> /dev/null
+          wipefs -a "$DISK" &> /dev/null
 
 
 
@@ -529,7 +688,8 @@ evince
 mpv
 imv + restro
 gnome-disk-utility
-
+g4music
+onlyoffice 7.2
 
 
 Arc Theme
@@ -539,3 +699,6 @@ Brave
 
 
 
+# TO-DO LIST :
+~~~~~~~~~~~~~~
+# AUTO DETECT DISKS : lsblk -dno NAME | grep -v sr0
