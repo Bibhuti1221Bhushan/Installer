@@ -10,6 +10,12 @@ echo -e "[global-dns-domain-*]" >> /etc/NetworkManager/NetworkManager.conf
 echo -e "servers=::1,1.1.1.1" >> /etc/NetworkManager/NetworkManager.conf
 systemctl restart NetworkManager
 
+# If the script exits for any reason, unhide the cursor.
+printf "\e[?25h\e[?7h"
+# Hide the cursor and disable line wrap.
+printf '\e[?25l\e[?7l'
+
+
 
 MOZ_ENABLE_WAYLAND=1
 QT_QPA_PLATFORM=wayland
@@ -156,6 +162,13 @@ Done_Print "SETTING PLYMOUTH BOOT SPLASH."
 echo
 
 
+check_connection() {
+  # Check if a web page is available
+    if ! nc -zw1 archlinux.org 443 &> /dev/null 
+    then
+        echo "No Internet" ; exit 1
+    fi
+}
 
 
 # Configuring /etc/mkinitcpio.conf.
@@ -511,15 +524,127 @@ if [ $? -eq 1 ]; then
 exit 1
 fi
 
+# format using fdisk
+  fdisk ${DISK_PATH} <<-EOF
+	g
+	p
+	n
+	1
+
+	+512M
+	n
+	2
+
+	+${SWAP_MEM}
+	n
+	3
+
+
+	t
+	1
+	1
+	t
+	2
+	19
+	p
+	w
+EOF
+
+
+sgdisk -Z ${DISK} # zap all on disk
+sgdisk -a 2048 -o ${DISK} # new gpt disk 2048 alignment
+
+# create partitions
+sgdisk -n 1::+1M --typecode=1:ef02 --change-name=1:'BIOSBOOT' ${DISK} # partition 1 (BIOS Boot Partition)
+sgdisk -n 2::+300M --typecode=2:ef00 --change-name=2:'EFIBOOT' ${DISK} # partition 2 (UEFI Boot Partition)
+sgdisk -n 3::-0 --typecode=3:8300 --change-name=3:'ROOT' ${DISK} # partition 3 (Root), default start, remaining
+if [[ ! -d "/sys/firmware/efi" ]]; then # Checking for bios system
+    sgdisk -A 1:set:2 ${DISK}
+fi
+partprobe ${DISK} # reread partition table to ensure it is correct
 
 
 
+nc=$(grep -c ^processor /proc/cpuinfo)
+echo -ne "
+-------------------------------------------------------------------------
+                    You have " $nc" cores. And
+			changing the makeflags for "$nc" cores. Aswell as
+				changing the compression settings.
+-------------------------------------------------------------------------
+"
+TOTAL_MEM=$(cat /proc/meminfo | grep -i 'memtotal' | grep -o '[[:digit:]]*')
+if [[  $TOTAL_MEM -gt 8000000 ]]; then
+sed -i "s/#MAKEFLAGS=\"-j2\"/MAKEFLAGS=\"-j$nc\"/g" /etc/makepkg.conf
+sed -i "s/COMPRESSXZ=(xz -c -z -)/COMPRESSXZ=(xz -c -T $nc -z -)/g" /etc/makepkg.conf
+fi
+
+
+
+# set kernel parameter for adding splash screen
+sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="[^"]*/& splash /' /etc/default/grub
+
+
+
+PLYMOUTH_THEMES_DIR="$HOME/ArchTitus/configs/usr/share/plymouth/themes"
+PLYMOUTH_THEME="arch-glow" # can grab from config later if we allow selection
+mkdir -p /usr/share/plymouth/themes
+echo 'Installing Plymouth theme...'
+cp -rf ${PLYMOUTH_THEMES_DIR}/${PLYMOUTH_THEME} /usr/share/plymouth/themes
+if  [[ $FS == "luks"]]; then
+  sed -i 's/HOOKS=(base udev*/& plymouth/' /etc/mkinitcpio.conf # add plymouth after base udev
+  sed -i 's/HOOKS=(base udev \(.*block\) /&plymouth-/' /etc/mkinitcpio.conf # create plymouth-encrypt after block hook
+else
+  sed -i 's/HOOKS=(base udev*/& plymouth/' /etc/mkinitcpio.conf # add plymouth after base udev
+fi
+plymouth-set-default-theme -R arch-glow # sets the theme and runs mkinitcpio
+echo 'Plymouth theme installed'
+
+disk_select () {
+    PS3="SELECT DISK : "
+    echo -e "\e[1;35m"
+    select ENTRY in $(lsblk -dpnoNAME|grep -P "/dev/sd|nvme|vd|sr");
+    do
+        DISK=$ENTRY
+        echo "Installing Arch Linux on $DISK."
+        break
+    done
+}
+
+kernel_selector () {
+    echo "List of kernels:"
+    echo "1) Stable — Vanilla Linux kernel and modules, with a few patches applied."
+    echo "2) Hardened — A security-focused Linux kernel."
+    echo "3) Longterm — Long-term support (LTS) Linux kernel and modules."
+    echo "4) Zen Kernel — Optimized for desktop usage."
+    read -r -p "Insert the number of the corresponding kernel: " choice
+    echo "$choice will be installed"
+    case $choice in
+        1 ) kernel=linux
+            ;;
+        2 ) kernel=linux-hardened
+            ;;
+        3 ) kernel=linux-lts
+            ;;
+        4 ) kernel=linux-zen
+            ;;
+        * ) echo "You did not enter a valid selection."
+            kernel_selector
+    esac
+}
+
+
+
+
+
+
+reflector -a 48 -c $iso -f 5 -l 20 --sort rate --save /etc/pacman.d/mirrorlist
 reflector --latest 10 --protocol https --sort rate --save /etc/pacman.d/mirrorlist
 reflector --latest 20 --age 24 --sort rate --protocol https --country $REFLECTOR_COUNTRY --save /etc/pacman.d/mirrorlist
 
 
 useradd -m users -G wheel,audio,video -s /bin/bash $username
-
+ESP="/dev/$(lsblk $DISK -o NAME,PARTLABEL | grep ESP| cut -d " " -f1 | cut -c7-)"
 
 
 set_boot() {
@@ -636,6 +761,33 @@ root   ALL=(ALL) ALL
 EOF
 }
 
+	pacman -S --needed --noconfirm grub efibootmgr
+	grub-install --target=x86_64-efi --efi-directory=/boot/ --bootloader-id=GRUB --removable
+	sed -i '/^GRUB_TIMEOUT=/s/5/0/g' /etc/default/grub
+	sed -i '/^GRUB_TIMEOUT_STYLE=/s/menu/countdown/g' /etc/default/grub
+	sed -i '/^GRUB_CMDLINE_LINUX_DEFAULT=/s/"$/ usbcore.autosuspend=-1 btusb.enable_autosuspend=0"/' /etc/default/grub
+	sed -i 's/#HandlePowerKey=poweroff/HandlePowerKey=suspend/' /etc/systemd/logind.conf
+	grub-mkconfig -o /boot/grub/grub.cfg
+
+
+
+
+
+
+cat >> /etc/NetworkManager/conf.d/wifi-rand-mac.conf <<-EOF
+	[device-mac-randomization]
+	wifi.scan-rand-mac-address=yes
+
+	[connection-mac-randomization]
+	ethernet.cloned-mac-address=random
+	wifi.cloned-mac-address=stable
+EOF
+
+	cat >> /etc/modprobe.d/nobeep.conf <<-EOF
+	blacklist pcspkr
+	blacklist snd_pcsp
+EOF
+
 disable_pc_speaker() {
 	echo "blacklist pcspkr" >>/etc/modprobe.d/nobeep.conf
 }
@@ -646,6 +798,81 @@ check_connection() {
     exit 1
   fi
 }
+
+wait_for_any_key_press ()
+{
+    echo -ne "Waiting for any key to be pressed..."
+	read -n 1 -s -r -p "$1"
+	echo
+}
+
+
+set_password() {
+    read -rs -p "Please enter password: " PASSWORD1
+    echo -ne "\n"
+    read -rs -p "Please re-enter password: " PASSWORD2
+    echo -ne "\n"
+    if [[ "$PASSWORD1" == "$PASSWORD2" ]]; then
+        set_option "$1" "$PASSWORD1"
+    else
+        echo -ne "ERROR! Passwords do not match. \n"
+        set_password
+    fi
+}
+
+root_check() {
+    if [[ "$(id -u)" != "0" ]]; then
+        echo -ne "ERROR! This script must be run under the 'root' user!\n"
+        exit 0
+    fi
+}
+
+arch_check() {
+    if [[ ! -e /etc/arch-release ]]; then
+        echo -ne "ERROR! This script must be run in Arch Linux!\n"
+        exit 0
+    fi
+}
+
+
+function config_arch()
+{
+  echo
+  read -p "Enter a new user name: " -e USER_NAME
+
+  arch-chroot /mnt <<-REALEND
+	curl -s https://raw.githubusercontent.com/linux-surface/linux-surface/master/pkg/keys/surface.asc \
+	| pacman-key --add -
+	pacman-key --finger 56C464BAAC421453
+	pacman-key --lsign-key 56C464BAAC421453
+
+	passwd <<-EOF
+	root
+	root
+EOF
+
+	useradd -m -G users,wheel -s /bin/bash ${USER_NAME}
+	passwd ${USER_NAME} <<-EOF
+	${USER_NAME}
+	${USER_NAME}
+EOF
+
+	pacman -S --needed --noconfirm sudo vim
+	sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /etc/sudoers
+	ln -s /usr/bin/vim /usr/bin/vi
+REALEND
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -662,7 +889,7 @@ reflector htop rfkill sudo unrar unzip wget zip xdg-user-dirs exa fish git pacma
 
 
 sgdisk --zap-all "$DISK" &> /dev/null
-          wipefs -a "$DISK" &> /dev/null
+wipefs -a "$DISK" &> /dev/null
 
 
 
@@ -680,6 +907,7 @@ blueman
 bluez
 bluez-utils
 
+nautilus
 swaync  
 galculator
 sublime text 4

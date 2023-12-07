@@ -8,10 +8,12 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~
 USERNAME="Bibhuti"                       # SET USER-NAME
 NICKNAME="Bibhuti Bhushan"               # SET NICK-NAME
+ROOTPASS="////"                          # SET ROOT-PASS
+USERPASS="////"                          # SET USER-PASS
 HOSTNAME="iTunes"                        # SET HOST-NAME
 TIMEZONE="Asia/Kolkata"                  # SET TIME-ZONE
-KEYBOARD="us"                            # SET KEYBOARD
-LOCALE="en_US.UTF-8"                     # SET LOCALE
+KEYBOARD="us"                            # SET KEYBOARDS
+LOCALE="en_US.UTF-8"                     # SET AN LOCALE
 
 # SET DISK VARIABLES :
 # ~~~~~~~~~~~~~~~~~~~~
@@ -59,6 +61,7 @@ RESET="\e[0m"
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 Info_Print () {
     echo -ne "\r${BCYAN}          ! NOTE !${BYELO} - $1${RESET}\n"
+    echo -e "# $1" &>> $LOGFILE
 }
 
 Done_Print () {
@@ -66,7 +69,7 @@ Done_Print () {
 }
 
 Warn_Print () {
-    echo -ne "\r${BREDD}          ! WARN !${BBLUE} - $1${RESET}\n\n"
+    echo -ne "\r${BBLUE}          ! WARN !${BREDD} - $1${RESET}\n\n"
     sleep 5
     exit 1
 }
@@ -240,10 +243,11 @@ Initialising_KRings () {
     Spin 8 INITIALISING &
     PID=$!
     if
-        killall gpg-agent &>> $LOGFILE
-        rm -rf /etc/pacman.d/gnupg/ &>> $LOGFILE
-        pacman-key --init &>> $LOGFILE
-        pacman-key --populate archlinux &>> $LOGFILE
+        systemctl restart pacman-init &>> $LOGFILE
+        # killall gpg-agent &>> $LOGFILE
+        # rm -rf /etc/pacman.d/gnupg/ &>> $LOGFILE
+        # pacman-key --init &>> $LOGFILE
+        # pacman-key --populate archlinux &>> $LOGFILE
         pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
     then
         sleep 1
@@ -271,7 +275,6 @@ Wiping_Drive () {
         sleep 0.5
         sgdisk -Zo "$DISK" &>> $LOGFILE
         sleep 0.5
-        partprobe "$DISK" &>> $LOGFILE
     then
         sleep 1
         kill $PID
@@ -330,6 +333,10 @@ Creating_Partition
 echo "CREATING PARTITIONS." &>> $LOGFILE
 echo
 
+partprobe "$DISK" &>> $LOGFILE
+
+
+
 # FORMAT THE PARTITIONS :
 # ~~~~~~~~~~~~~~~~~~~~~~~
 Formatting_Partition () {
@@ -384,32 +391,24 @@ Mounting_Partition () {
         if [[ $DISK =~ ^/dev/nvme.* ]]; then
             if [[ "$SWAP" == "1" ]]; then
                 mount -v "$DISK"p3 /mnt
-                mkdir -vp /mnt/boot &>> $LOGFILE
-                mount -v "$DISK"p1 /mnt/boot
-                mkdir -vp /mnt/home &>> $LOGFILE
-                mount -v "$DISK"p4 /mnt/home
+                mount --mkdir -v "$DISK"p1 /mnt/boot &>> $LOGFILE
+                mount --mkdir -v "$DISK"p4 /mnt/home &>> $LOGFILE
                 swapon -v "$DISK"p2 &>> $LOGFILE
             else
                 mount -v "$DISK"p2 /mnt
-                mkdir -vp /mnt/boot &>> $LOGFILE
-                mount -v "$DISK"p1 /mnt/boot
-                mkdir -vp /mnt/home &>> $LOGFILE
-                mount -v "$DISK"p3 /mnt/home
+                mount --mkdir -v "$DISK"p1 /mnt/boot &>> $LOGFILE
+                mount --mkdir -v "$DISK"p3 /mnt/home &>> $LOGFILE
             fi
         else
             if [[ "$SWAP" == "1" ]]; then
                 mount -v "$DISK"3 /mnt &>> $LOGFILE
-                mkdir -vp /mnt/boot &>> $LOGFILE
-                mount -v "$DISK"1 /mnt/boot &>> $LOGFILE
-                mkdir -vp /mnt/home &>> $LOGFILE
-                mount -v "$DISK"4 /mnt/home &>> $LOGFILE
+                mount --mkdir -v "$DISK"1 /mnt/boot &>> $LOGFILE
+                mount --mkdir -v "$DISK"4 /mnt/home &>> $LOGFILE
                 swapon -v "$DISK"2 &>> $LOGFILE
             else
                 mount -v "$DISK"2 /mnt &>> $LOGFILE
-                mkdir -vp /mnt/boot &>> $LOGFILE
-                mount -v "$DISK"1 /mnt/boot &>> $LOGFILE
-                mkdir -vp /mnt/home &>> $LOGFILE
-                mount -v "$DISK"3 /mnt/home &>> $LOGFILE
+                mount --mkdir -v "$DISK"1 /mnt/boot &>> $LOGFILE
+                mount --mkdir -v "$DISK"3 /mnt/home &>> $LOGFILE
             fi
         fi
     then
@@ -841,15 +840,15 @@ Setting_BLoader () {
             echo "initrd  /initramfs-$KERNEL.img" >> /mnt/boot/loader/entries/arch.conf
             if [[ $DISK =~ ^/dev/nvme.* ]]; then
                 if [[ "$SWAP" == "1" ]]; then
-                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p3) rw" >> /mnt/boot/loader/entries/arch.conf
+                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p3) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
                 else
-                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p2) rw" >> /mnt/boot/loader/entries/arch.conf
+                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p2) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
                 fi
             else
                 if [[ "$SWAP" == "1" ]]; then
-                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}3) rw" >> /mnt/boot/loader/entries/arch.conf
+                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}3) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
                 else
-                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}2) rw" >> /mnt/boot/loader/entries/arch.conf
+                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}2) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
                 fi
             fi
         else
