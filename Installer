@@ -181,7 +181,7 @@ echo
 # UPDATE KEYRING :
 # ~~~~~~~~~~~~~~~~
 Info_Print "UPDATING KEYRINGS."
-pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
+pacman -Syy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
 Done_Print "UPDATING KEYRINGS."
 echo
 

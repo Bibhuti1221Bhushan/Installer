@@ -708,6 +708,7 @@ Setting_Reflector () {
     PID=$!
     if
         arch-chroot /mnt pacman -S --noconfirm reflector &>> $LOGFILE
+        reflector --download-timeout 60 --country India,Singapore --age 12 --protocol https --sort rate
         arch-chroot /mnt reflector --save /etc/pacman.d/mirrorlist --download-timeout 60 --protocol https --country India --sort rate --verbose &>> $LOGFILE
         echo "--save /etc/pacman.d/mirrorlist" >> /mnt/etc/xdg/reflector/reflector.conf
         echo "--download-timeout 60" >> /mnt/etc/xdg/reflector/reflector.conf
