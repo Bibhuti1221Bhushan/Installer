@@ -38,7 +38,7 @@ BOOTLOADER=1                             # 0 = GRUB & 1 = SYSTEMD-BOOT
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
 KERNEL="linux-lts"                       # SET KERNEL PACKAGES
-EXTRA="git neovim"                       # EXTRA PACKAGES LIKE EDITOR
+PACKAGES="git neovim"                       # EXTRA PACKAGES LIKE EDITOR
 
 # SET LOG FILE :
 # ~~~~~~~~~~~~~~
@@ -142,7 +142,7 @@ _Generating_FSTab_Complete=false
 
 _Configuring_Localization_Complete=false    # -- tzone locale lang console
 _Configuring_NManager_Complete=false        # -- hosts hostname nm
-_Configuring_Reflector_Complete=false
+_Configuring_PacManager_Complete=false      # -- pacman reflector
 _Configuring_Extra_Complete=false              # -- extra stuff wdog shutdowntime initramfs
 _Configuring_BLoader_Complete=false
 _Installing_Packages_Complete=false
@@ -241,10 +241,10 @@ _Chroot_Outline_Steps () {
         echo -ne "\r${BY}     2.2  Configuring Network Manager${BR}            - [ Incomplete ]${NO}\n"
     fi
 
-    if [ "${_Configuring_Reflector_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.3  Configuring Reflector${BG}            - [ Complete ]${NO}\n"
+    if [ "${_Configuring_PacManager_Complete}" = true ]; then
+        echo -ne "\r${BC}     2.3  Configuring Package Manager${BG}            - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.3  Configuring Reflector${BR}            - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.3  Configuring Package Manager${BR}            - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Configuring_Extra_Complete}" = true ]; then
@@ -300,14 +300,6 @@ _Install_Title () {
     echo
     _Title_Print 17 "╔═══════════════╗"
     _Title_Print 17 "║  ARCH INSTALL ║"
-    _Title_Print 17 "╚═══════════════╝"
-    echo
-}
-
-_Chroot_Title () {
-    echo
-    _Title_Print 17 "╔═══════════════╗"
-    _Title_Print 17 "║  ARCH CHROOT  ║"
     _Title_Print 17 "╚═══════════════╝"
     echo
 }
@@ -556,15 +548,235 @@ _Installing () {
     _Install_Outline_Steps
 }
 
-
 _Installing
 
 
+# ---------------------------------------------------------- #
+# ----------------- CHROOT START FROM HERE ----------------- #
+# ---------------------------------------------------------- #
 
+_Chroot_Title () {
+    echo
+    _Title_Print 17 "╔═══════════════╗"
+    _Title_Print 17 "║  ARCH CHROOT  ║"
+    _Title_Print 17 "╚═══════════════╝"
+    echo
+}
 
+_Configuring_Localization () {
+    clear
+    if
+        arch-chroot /mnt ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime &>> $LOGFILE
+        arch-chroot /mnt hwclock --systohc &>> $LOGFILE
+        
+        arch-chroot /mnt sed -i "s/#$LOCALE/$LOCALE/g" /etc/locale.gen
+        arch-chroot /mnt locale-gen &>> $LOGFILE
 
+        echo "LANG=$LOCALE" > /mnt/etc/locale.conf
+        echo "LC_COLLATE=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_ADDRESS=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_CTYPE=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_IDENTIFICATION=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_MEASUREMENT=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_MESSAGES=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_MONETARY=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_NAME=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_NUMERIC=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_PAPER=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_TELEPHONE=$LOCALE" >> /mnt/etc/locale.conf
+        echo "LC_TIME=$LOCALE" >> /mnt/etc/locale.conf
 
+        echo "KEYMAP=$KEYBOARD" > /mnt/etc/vconsole.conf
+        echo "XKBLAYOUT=$KEYBOARD" >> /mnt/etc/vconsole.conf
+
+    then
+        _Configuring_Localization_Complete=true
+    else
+        _Error_Print "CONFIGURING LOCALIZATION."
+    fi
+}
+
+_Configuring_NManager () {
+    clear
+    _Chroot_Outline_Steps
+    if
+        echo "$HOSTNAME" > /mnt/etc/hostname
+        
+        echo "127.0.0.1      localhost" >> /mnt/etc/hosts
+        echo "::1            localhost" >> /mnt/etc/hosts
+        echo "127.0.1.1      $HOSTNAME.localdomain     $HOSTNAME" >> /mnt/etc/hosts
+
+        arch-chroot /mnt pacman -S --noconfirm networkmanager &>> $LOGFILE
+        arch-chroot /mnt systemctl enable NetworkManager &>> $LOGFILE
+    then
+        _Configuring_NManager_Complete=true
+    else
+        _Error_Print "CONFIGURING NETWORK MANAGER."
+    fi
+}
+
+_Configuring_PacManager () {
+    clear
+    _Chroot_Outline_Steps
+    if
+        sed -i 's/#Color/Color\nILoveCandy/' /mnt/etc/pacman.conf &>> $LOGFILE
+        sed -i '/\[multilib\]/,/Include/s/^#//' /mnt/etc/pacman.conf &>> $LOGFILE
+        sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /mnt/etc/pacman.conf &>> $LOGFILE
+        sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 5/" /mnt/etc/pacman.conf &>> $LOGFILE
+
+        arch-chroot /mnt pacman -Sy --noconfirm reflector &>> $LOGFILE
+        arch-chroot /mnt reflector --save /etc/pacman.d/mirrorlist --download-timeout 60 --protocol https --country India,Singapore --age 20 --sort rate --verbose &>> $LOGFILE
+        echo "--save /etc/pacman.d/mirrorlist" >> /mnt/etc/xdg/reflector/reflector.conf
+        echo "--country India,Singapore" >> /mnt/etc/xdg/reflector/reflector.conf
+        echo "--download-timeout 60" >> /mnt/etc/xdg/reflector/reflector.conf
+        echo "--protocol https" >> /mnt/etc/xdg/reflector/reflector.conf
+        echo "--sort rate" >> /mnt/etc/xdg/reflector/reflector.conf
+        echo "--age 20" >> /mnt/etc/xdg/reflector/reflector.conf
+        echo "--verbose" > /mnt/etc/xdg/reflector/reflector.conf
+
+    then
+        _Configuring_PacManager_Complete=true
+    else
+        _Error_Print "CONFIGURING PACKAGE MANAGER."
+    fi
+}
+
+_Configuring_Extra () {
+    clear
+    _Chroot_Outline_Steps
+    if
+        echo "blacklist iTCO_wdt" > /mnt/etc/modprobe.d/nowatchdog.conf
+        sed -i "s/^#DefaultTimeoutStopSec=.*/DefaultTimeoutStopSec=10s/" /mnt/etc/systemd/system.conf
+
+        arch-chroot /mnt mkinitcpio -P &>> $LOGFILE
+    then
+        _Configuring_Extra_Complete=true
+    else
+        _Error_Print "CONFIGURING EXTRA STUFF."
+    fi
+}
+
+_Configuring_BLoader () {
+    clear
+    _Chroot_Outline_Steps
+    if
+        if [[ "$BOOTLOADER" == "1" ]]; then
+            arch-chroot /mnt bootctl install --esp-path=/boot/ &>> $LOGFILE
+            echo "default arch.conf" >> /mnt/boot/loader/loader.conf
+            echo "timeout 0" >> /mnt/boot/loader/loader.conf
+            echo "title   Arch Linux" >> /mnt/boot/loader/entries/arch.conf
+            echo "linux   /vmlinuz-$KERNEL" >> /mnt/boot/loader/entries/arch.conf
+            echo "initrd  /$MICROCODE.img" >> /mnt/boot/loader/entries/arch.conf
+            echo "initrd  /initramfs-$KERNEL.img" >> /mnt/boot/loader/entries/arch.conf
+            if [[ $DISK =~ ^/dev/nvme.* ]]; then
+                if [[ "$SWAP" == "1" ]]; then
+                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p3) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
+                else
+                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p2) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
+                fi
+            else
+                if [[ "$SWAP" == "1" ]]; then
+                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}3) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
+                else
+                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}2) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
+                fi
+            fi
+        else
+            arch-chroot /mnt pacman -S --noconfirm grub efibootmgr &>> $LOGFILE
+            arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/ --bootloader-id="Boot Manager" --recheck &>> $LOGFILE
+            arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg &>> $LOGFILE
+        fi
+
+    then
+        _Configuring_BLoader_Complete=true
+    else
+        _Error_Print "CONFIGURING BOOT LOADER."
+    fi
+}
+
+_Installing_Packages () {
+    clear
+    _Chroot_Outline_Steps
+    if
+        arch-chroot /mnt pacman -S --noconfirm $PACKAGES &>> $LOGFILE
+    then
+        _Installing_Packages_Complete=true
+    else
+        _Error_Print "INSTALLING PACKAGES."
+    fi
+}
+
+_Creating_SFile () {
+    clear
+    _Chroot_Outline_Steps
+    if
+        if [[ "$SWAP" == "2" ]]; then
+            mkdir -vp /mnt/swap &>> $LOGFILE
+            arch-chroot /mnt dd if=/dev/zero of=/swap/swapfile bs=1M count=$(("$SWAPSIZE" * 1024)) &>> $LOGFILE
+            arch-chroot /mnt chmod 600 /swap/swapfile &>> $LOGFILE
+            arch-chroot /mnt mkswap /swap/swapfile &>> $LOGFILE
+            arch-chroot /mnt swapon /swap/swapfile &>> $LOGFILE
+            echo '/swap/swapfile                      none       swap       sw 0 0' | tee -a /mnt/etc/fstab &>> $LOGFILE
+        fi
+    then
+        _Creating_SFile_Complete=true
+    else
+        _Error_Print "CREATING SWAP FILE."
+    fi
+}
+
+_Setting_RPass () {
+    clear
+    _Chroot_Outline_Steps
+    if
+        printf "%s\n%s" "${ROOTPASSWORD}" "${ROOTPASSWORD}" | arch-chroot /mnt passwd &>> $LOGFILE
+    then
+        _Setting_RPass_Complete=true
+    else
+        _Error_Print "SETTING ROOT PASSWORD."
+    fi
+}
+
+_Setting_User () {
+    clear
+    _Chroot_Outline_Steps
+    if
+        arch-chroot /mnt useradd -mG wheel,audio,video,storage,network,power,optical -c "${NICKNAME}" -s "${which bash}" "${USERNAME}"
+        sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /mnt/etc/sudoers
+
+        printf "%s\n%s" "${USERPASSWORD}" "${USERPASSWORD}" | arch-chroot /mnt passwd $USERNAME &>> $LOGFILE
+    then
+        _Setting_User_Complete=true
+    else
+        _Error_Print "SETTING USER."
+    fi
+}
+
+_Coping_Logs () {
+    clear
+    _Chroot_Outline_Steps
+    if
+        cp Installer.log /mnt/home/$USERNAME &>> $LOGFILE
+    then
+        _Coping_Logs_Complete=true
+    else
+        _Error_Print "COPING LOGS."
+    fi
+}
 
 _Chrooting () {
     _Configuring_Localization
+    _Configuring_NManager
+    _Configuring_PacManager
+    _Configuring_Extra
+    _Configuring_BLoader
+    _Installing_Packages
+    _Creating_SFile
+    _Setting_RPass
+    _Setting_User
+    _Coping_Logs
+    clear
+    _Chroot_Outline_Steps
 }
+
+_Chrooting

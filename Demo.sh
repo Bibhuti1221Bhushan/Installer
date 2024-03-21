@@ -680,7 +680,7 @@ Editing_Pacman () {
     Spin 13 EDITING &
     PID=$!
     if
-        sed -i 's/#Color/Color\nILoveCandy/' /etc/pacman.conf
+        sed -i 's/#Color/Color\nILoveCandy/' /mnt/etc/pacman.conf
         sed -i '/\[multilib\]/,/Include/s/^#//' /mnt/etc/pacman.conf
         sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /mnt/etc/pacman.conf
         sed -i 's/^#ParallelDownloads/ParallelDownloads/' /mnt/etc/pacman.conf
