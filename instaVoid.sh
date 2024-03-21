@@ -394,7 +394,7 @@ _Checking_Dep () {
     clear
     _Install_Outline_Steps
     if
-        sudo pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
+        pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
     then
         _Checking_Dep_Complete=true
     else
@@ -545,7 +545,7 @@ _Installing () {
     _Checking_Vars
     _Setting_DTime
     _Configuring_Pacman
-    _Checking_Deps
+    _Checking_Dep
     _Wiping_Disks
     _Creating_Partition
     _Formating_Partition
