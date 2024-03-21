@@ -181,7 +181,7 @@ _Install_Outline_Steps () {
         echo -ne "\r${BY}     1.3  Configuring Pacman${BR}              - [ Incomplete ]${NO}\n"
     fi
 
-    if [ "${_Checking_Deps_Complete}" = true ]; then
+    if [ "${_Checking_Dep_Complete}" = true ]; then
         echo -ne "\r${BC}     1.4  Checking Dependencies${BG}           - [ Complete ]${NO}\n"
     else
         echo -ne "\r${BY}     1.4  Checking Dependencies${BR}           - [ Incomplete ]${NO}\n"
@@ -317,10 +317,10 @@ _Chroot_Title () {
 _Checking_BMode () {
     clear
     if [ ! -d /sys/firmware/efi/efivars ]; then
-    _Install_Outline_Steps
-    _Error_Print "YOU MUST BOOT INTO UEFI MODE."
+        _Install_Outline_Steps
+        _Error_Print "YOU MUST BOOT INTO UEFI MODE."
     else
-    _Checking_BMode_Complete=true
+        _Checking_BMode_Complete=true
     fi    
 }
 
@@ -328,33 +328,33 @@ _Checking_Vars () {
     clear
     _Install_Outline_Steps
     if [[ -z "$USERNAME"  ]]; then
-    _Error_Print "SPECIFY VARIABLE USERNAME."
+        _Error_Print "SPECIFY VARIABLE USERNAME."
     elif [ -z "$NICKNAME" ]; then
-    _Error_Print "SPECIFY VARIABLE NICKNAME."
+        _Error_Print "SPECIFY VARIABLE NICKNAME."
     elif [ -z "$HOSTNAME" ]; then
-    _Error_Print "SPECIFY VARIABLE HOSTNAME."
+        _Error_Print "SPECIFY VARIABLE HOSTNAME."
     elif [ -z "$TIMEZONE" ]; then
-    _Error_Print "SPECIFY VARIABLE TIMEZONE."
+        _Error_Print "SPECIFY VARIABLE TIMEZONE."
     elif [ -z "$KEYBOARD" ]; then
-    _Error_Print "SPECIFY VARIABLE KEYBOARD."
+        _Error_Print "SPECIFY VARIABLE KEYBOARD."
     elif [ -z "$LOCALE" ]; then
-    _Error_Print "SPECIFY  VARIABLE  LOCALE."
+        _Error_Print "SPECIFY  VARIABLE  LOCALE."
     elif [[ ! $DISK =~ ^/dev/.* ]]; then
-    _Error_Print "SPECIFY THE VARIABLE DISK."
+        _Error_Print "SPECIFY THE VARIABLE DISK."
     elif [[ $BOOTSIZE -lt 500 ]]; then
-    _Error_Print "SPECIFY VARIABLE BOOTSIZE."
+        _Error_Print "SPECIFY VARIABLE BOOTSIZE."
     elif [[ $ROOTSIZE -lt 5 ]]; then
-    _Error_Print "SPECIFY VARIABLE ROOTSIZE."
+        _Error_Print "SPECIFY VARIABLE ROOTSIZE."
     elif [[ $SWAP != 0 && $SWAP != 1 && $SWAP != 2 ]]; then
-    _Error_Print "SPECIFY THE VARIABLE SWAP."
+        _Error_Print "SPECIFY THE VARIABLE SWAP."
     elif [[ $SWAPSIZE -lt 2 ]];  then
-    _Error_Print "SPECIFY VARIABLE SWAPSIZE."
+        _Error_Print "SPECIFY VARIABLE SWAPSIZE."
     elif [[ $BOOTLOADER != 0 && $BOOTLOADER != 1 ]]; then
-    _Error_Print "SPECIFY THE VARIABLE BOOTLOADER."
+        _Error_Print "SPECIFY THE VARIABLE BOOTLOADER."
     elif [[ ! $KERNEL == linux* ]]; then
-    _Error_Print "SPECIFY THE VARIABLE KERNEL."
+        _Error_Print "SPECIFY THE VARIABLE KERNEL."
     else
-    _Checking_Var_Complete=true
+        _Checking_Var_Complete=true
     fi
 }
 
@@ -362,8 +362,7 @@ _Setting_DTime () {
     clear
     _Install_Outline_Steps
     if
-        # timedatectl set-ntp true &>> $LOGFILE
-        echo
+        timedatectl set-ntp true &>> $LOGFILE
     then
         _Setting_DTime_Complete=true
     else
@@ -380,9 +379,10 @@ _Configuring_Pacman () {
         # rm -rf /etc/pacman.d/gnupg/ &>> $LOGFILE
         # pacman-key --init &>> $LOGFILE
         # pacman-key --populate archlinux &>> $LOGFILE
-        echo
-        # sed -i "s/^#Color/Color/" /etc/pacman.conf &>> $LOGFILE
-        # sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 10/" /etc/pacman.conf &>> $LOGFILE
+        sed -i 's/#Color/Color\nILoveCandy/' /etc/pacman.conf &>> $LOGFILE
+        sed -i '/\[multilib\]/,/Include/s/^#//' /mnt/etc/pacman.conf &>> $LOGFILE
+        sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /mnt/etc/pacman.conf &>> $LOGFILE
+        sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 5/" /etc/pacman.conf &>> $LOGFILE
     then
         _Configuring_Pacman_Complete=true
     else
@@ -390,13 +390,13 @@ _Configuring_Pacman () {
     fi
 }
 
-_Checking_Deps () {
+_Checking_Dep () {
     clear
     _Install_Outline_Steps
     if
         sudo pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
     then
-        _Checking_Deps_Complete=true
+        _Checking_Dep_Complete=true
     else
         _Error_Print "CHECKING DEPENDENCIES."
     fi
@@ -435,7 +435,8 @@ _Creating_Partition () {
         else
             parted "$DISK" -s mklabel gpt &>> $LOGFILE
             parted "$DISK" -s mkpart ESP fat32 1MiB "$BOOTSIZE"M &>> $LOGFILE
-            parted "$DISK" -s mkpart ROOT ext4 "$BOOTSIZE"M 100% &>> $LOGFILE
+            parted "$DISK" -s mkpart ROOT ext4 "$BOOTSIZE"M "$ROOTSIZE"G &>> $LOGFILE
+            parted "$DISK" -s mkpart HOME ext4 "$ROOTSIZE"G 100% &>> $LOGFILE
             parted "$DISK" -s set 1 esp on &>> $LOGFILE
             parted "$DISK" -s set 2 root on &>> $LOGFILE
             parted "$DISK" -s set 3 linux-home on &>> $LOGFILE
@@ -451,15 +452,28 @@ _Formating_Partition () {
     clear
     _Install_Outline_Steps
     if
-        if [[ "$SWAP" == "1" ]]; then
-            mkfs.fat -F 32 -n ESP "$DISK"p1 &>> $LOGFILE
-            mkswap -L SWAP "$DISK"p2 &>> $LOGFILE
-            mkfs.ext4 -L ROOT "$DISK"p3 &>> $LOGFILE
-            mkfs.ext4 -L HOME "$DISK"p4 &>> $LOGFILE
+        if [[ $DISK =~ ^/dev/nvme.* ]]; then
+            if [[ "$SWAP" == "1" ]]; then
+                mkfs.fat -F 32 -n ESP "$DISK"p1 &>> $LOGFILE
+                mkswap -L SWAP "$DISK"p2 &>> $LOGFILE
+                mkfs.ext4 -L ROOT "$DISK"p3 &>> $LOGFILE
+                mkfs.ext4 -L HOME "$DISK"p4 &>> $LOGFILE
+            else
+                mkfs.fat -F 32 -n ESP "$DISK"p1 &>> $LOGFILE
+                mkfs.ext4 -L ROOT "$DISK"p2 &>> $LOGFILE
+                mkfs.ext4 -L HOME "$DISK"p3 &>> $LOGFILE
+            fi
         else
-            mkfs.fat -F 32 -n ESP "$DISK"p1 &>> $LOGFILE
-            mkfs.ext4 -L ROOT "$DISK"p2 &>> $LOGFILE
-            mkfs.ext4 -L HOME "$DISK"p3 &>> $LOGFILE
+            if [[ "$SWAP" == "1" ]]; then
+                mkfs.fat -F 32 -n ESP "$DISK"1 &>> $LOGFILE
+                mkswap -L SWAP "$DISK"2 &>> $LOGFILE
+                mkfs.ext4 -L ROOT "$DISK"3 &>> $LOGFILE
+                mkfs.ext4 -L HOME "$DISK"4 &>> $LOGFILE
+            else
+                mkfs.fat -F 32 -n ESP "$DISK"1 &>> $LOGFILE
+                mkfs.ext4 -L ROOT "$DISK"2 &>> $LOGFILE
+                mkfs.ext4 -L HOME "$DISK"3 &>> $LOGFILE
+            fi
         fi
     then
         _Formating_Partition_Complete=true
@@ -472,15 +486,28 @@ _Mounting_Partition () {
     clear
     _Install_Outline_Steps
     if
-        if [[ "$SWAP" == "1" ]]; then
-            mount -v "$DISK"p3 /mnt
-            mount --mkdir -v "$DISK"p1 /mnt/boot
-            mount --mkdir -v "$DISK"p4 /mnt/home
-            swapon -v "$DISK"p2
+        if [[ $DISK =~ ^/dev/nvme.* ]]; then
+            if [[ "$SWAP" == "1" ]]; then
+                mount -v "$DISK"p3 /mnt
+                mount --mkdir -v "$DISK"p1 /mnt/boot &>> $LOGFILE
+                mount --mkdir -v "$DISK"p4 /mnt/home &>> $LOGFILE
+                swapon -v "$DISK"p2 &>> $LOGFILE
+            else
+                mount -v "$DISK"p2 /mnt
+                mount --mkdir -v "$DISK"p1 /mnt/boot &>> $LOGFILE
+                mount --mkdir -v "$DISK"p3 /mnt/home &>> $LOGFILE
+            fi
         else
-            mount -v "$DISK"p2 /mnt
-            mount --mkdir -v "$DISK"p1 /mnt/boot
-            mount --mkdir -v "$DISK"p3 /mnt/home
+            if [[ "$SWAP" == "1" ]]; then
+                mount -v "$DISK"3 /mnt &>> $LOGFILE
+                mount --mkdir -v "$DISK"1 /mnt/boot &>> $LOGFILE
+                mount --mkdir -v "$DISK"4 /mnt/home &>> $LOGFILE
+                swapon -v "$DISK"2 &>> $LOGFILE
+            else
+                mount -v "$DISK"2 /mnt &>> $LOGFILE
+                mount --mkdir -v "$DISK"1 /mnt/boot &>> $LOGFILE
+                mount --mkdir -v "$DISK"3 /mnt/home &>> $LOGFILE
+            fi
         fi
     then
         _Mounting_Partition_Complete=true
