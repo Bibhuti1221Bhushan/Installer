@@ -380,8 +380,8 @@ _Configuring_Pacman () {
         # pacman-key --init &>> $LOGFILE
         # pacman-key --populate archlinux &>> $LOGFILE
         sed -i 's/#Color/Color\nILoveCandy/' /etc/pacman.conf &>> $LOGFILE
-        sed -i '/\[multilib\]/,/Include/s/^#//' /mnt/etc/pacman.conf &>> $LOGFILE
-        sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /mnt/etc/pacman.conf &>> $LOGFILE
+        sed -i '/\[multilib\]/,/Include/s/^#//' /etc/pacman.conf &>> $LOGFILE
+        sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /etc/pacman.conf &>> $LOGFILE
         sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 5/" /etc/pacman.conf &>> $LOGFILE
     then
         _Configuring_Pacman_Complete=true
@@ -552,6 +552,7 @@ _Installing () {
     _Mounting_Partition
     _Installing_Base
     _Generating_FSTab
+    clear
     _Install_Outline_Steps
 }
 
