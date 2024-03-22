@@ -38,11 +38,12 @@ BOOTLOADER=1                             # 0 = GRUB & 1 = SYSTEMD-BOOT
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
 KERNEL="linux-lts"                       # SET KERNEL PACKAGES
-PACKAGES="git neovim"                       # EXTRA PACKAGES LIKE EDITOR
+EDITOR="neovim"                          # SET EDITOR
+PACKAGES="git"                           # INSTALL EXTRA PACKAGES 
 
 # SET LOG FILE :
 # ~~~~~~~~~~~~~~
-LOGFILE="Installer.log"
+LOGFILE="${0%.*}.log"
 
 # ---------------------------------------------------------- #
 # -------------------- COSMETICS THINGS -------------------- #
@@ -61,16 +62,41 @@ NO="\e[0m"
 # PRETTY PRINT FUNCTIONS :
 # ~~~~~~~~~~~~~~~~~~~~~~~~
 _Info_Print () {
-    echo -ne "\r${BCYAN}     $1${BREDD} - $2${RESET}\n"
-    echo -e "# $1" &>> $LOGFILE
+    echo 
+    echo -ne "\r${BG}     ! NOTE !${BB} - $1${NO}\n"
+    read -n 1 -s -r _
+}
+
+_Chrooting_Print () {
+    echo
+    echo -e "\r${BG}     ! NOTE !${BB} - ENTER ARCH CHROOT ENVIRONMENT? (Y/N)${NO}"
+    read -r -s -n 1 RESPONSE
+    if [[ "$RESPONSE" =~ ^([yY][eE][sS]|[yY])$ ]]; then
+        echo -ne "\r${BG}     ! NOTE !${BB} - ENTERING ARCH CHROOT ENVIRONMENT.${NO}"
+        sleep 0.5
+        echo -ne "\r${BG}     ! NOTE !${BB} - ENTERING ARCH CHROOT ENVIRONMENT..${NO}"
+        sleep 0.5
+        echo -ne "\r${BG}     ! NOTE !${BB} - ENTERING ARCH CHROOT ENVIRONMENT...${NO}\n"
+        sleep 0.5
+        arch-chroot /mnt
+    elif [[ "$RESPONSE" =~ ^([nN][oO]|[nN])$ ]]; then
+        echo -ne "\r${BG}     ! NOTE !${BB} - REBOOTING IN 3 SECONDS.${NO}"
+        sleep 0.5
+        echo -ne "\r${BG}     ! NOTE !${BB} - REBOOTING IN 3 SECONDS..${NO}"
+        sleep 0.5
+        echo -ne "\r${BG}     ! NOTE !${BB} - REBOOTING IN 3 SECONDS...${NO}\n"
+        sleep 0.5
+        reboot
+    else
+        echo -ne "\r${BG}     ! ERROR !${BR} - INVALID INPUT.${NO}\n"
+        _Chrooting_Print
+    fi
 }
 
 _Error_Print () {
     echo 
-    tput civis
     echo -ne "\r${BG}     ! ERROR !${BB} - $1${NO}\n"
     read -n 1 -s -r _
-    tput cnorm  
     exit 1
 }
 
@@ -85,30 +111,6 @@ _Title_Print () {
         PADDING+=' '
     done
     echo -e "${BP}${PADDING}${2}${NO}"
-}
-
-# SPIN FUNCTION :
-# ~~~~~~~~~~~~~~~
-Spin(){
-    VAR="$1"
-    case "$VAR" in
-        3)  SPIN=("+==" "=+=" "==+" "=+=");
-            ;;
-        4)
-            SPIN=("+===" "=+==" "==+=" "===+" "==+=" "=+==");
-            ;;
-        5)
-            SPIN=("+====" "=+===" "==+==" "===+=" "====+" "===+=" "==+==" "=+===");
-            ;;
-    esac
-    while [ 1 ]
-      do
-        for INTERVAL in ${SPIN[@]};
-        do
-          echo -ne "\r${BYELO}          ! WAIT ! - ${BBLUE}${2}${RESET}${BGREE} ${INTERVAL}${RESET}";
-          sleep 0.3;
-        done;
-    done
 }
 
 # ---------------------------------------------------------- #
@@ -128,23 +130,23 @@ _Detcting_Microcode () {
 
 # OUTLINE MENU :
 # ~~~~~~~~~~~~~~
-_Checking_BMode_Complete=false
+_Checking_Requirements_Complete=false
 _Checking_Var_Complete=false
 _Setting_DTime_Complete=false
-_Configuring_Pacman_Complete=false
+_Setting_Pacman_Complete=false
 _Checking_Dep_Complete=false
 _Wiping_Disks_Complete=false
 _Creating_Partition_Complete=false
-_Formating_Partition_Complete=false
+_Formatting_Partition_Complete=false
 _Mounting_Partition_Complete=false
-_Installing_Base_Complete=false
+_Installing_Arch_Complete=false
 _Generating_FSTab_Complete=false
 
-_Configuring_Localization_Complete=false    # -- tzone locale lang console
-_Configuring_NManager_Complete=false        # -- hosts hostname nm
-_Configuring_PacManager_Complete=false      # -- pacman reflector
-_Configuring_Extra_Complete=false              # -- extra stuff wdog shutdowntime initramfs
-_Configuring_BLoader_Complete=false
+_Setting_Localization_Complete=false    
+_Configuring_NManager_Complete=false        
+_Setting_PacManager_Complete=false      
+_Optimizing_Experience_Complete=false       
+_Setting_BLoader_Complete=false
 _Installing_Packages_Complete=false
 _Creating_SFile_Complete=false
 _Setting_RPass_Complete=false
@@ -154,145 +156,149 @@ _Coping_Logs_Complete=false
 # DISPLAY INCOMPLETE/COMPLETE STEPS :
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 _Install_Outline_Steps () {
-    
+
     _Install_Title
 
-    if [ "${_Checking_BMode_Complete}" = true ]; then
-        echo -ne "\r${BC}     1.0  Checking Boot Mode${BG}              - [ Complete ]${NO}\n"                     
+    if [ "${_Checking_Requirements_Complete}" = true ]; then
+        echo -ne "\r${BC}     1.0  Checking Requirements${BG}              - [ Complete ]${NO}\n"                     
     else
-        echo -ne "\r${BY}     1.0  Checking Boot Mode${BR}              - [ Incomplete ]${NO}\n"                     
+        echo -ne "\r${BY}     1.0  Checking Requirements${BR}              - [ Incomplete ]${NO}\n"                     
     fi
 
     if [ "${_Checking_Var_Complete}" = true ]; then
-        echo -ne "\r${BC}     1.1  Checking Variables${BG}              - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     1.1  Checking The Variable${BG}              - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     1.1  Checking Variables${BR}              - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     1.1  Checking The Variable${BR}              - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Setting_DTime_Complete}" = true ]; then
-        echo -ne "\r${BC}     1.2  Setting Date & Time${BG}             - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     1.2  Setting Date And Time${BG}              - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     1.2  Setting Date & Time${BR}             - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     1.2  Setting Date And Time${BR}              - [ Incomplete ]${NO}\n"
     fi
 
-    if [ "${_Configuring_Pacman_Complete}" = true ]; then
-        echo -ne "\r${BC}     1.3  Configuring Pacman${BG}              - [ Complete ]${NO}\n"
+    if [ "${_Setting_Pacman_Complete}" = true ]; then
+        echo -ne "\r${BC}     1.3  Setting Pacman Config${BG}              - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     1.3  Configuring Pacman${BR}              - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     1.3  Setting Pacman Config${BR}              - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Checking_Dep_Complete}" = true ]; then
-        echo -ne "\r${BC}     1.4  Checking Dependencies${BG}           - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     1.4  Checking Dependencies${BG}              - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     1.4  Checking Dependencies${BR}           - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     1.4  Checking Dependencies${BR}              - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Wiping_Disks_Complete}" = true ]; then
-        echo -ne "\r${BC}     1.5  Wiping Disks${BG}                    - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     1.5  Wiping Selected Disks${BG}              - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     1.5  Wiping Disks${BR}                    - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     1.5  Wiping Selected Disks${BR}              - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Creating_Partition_Complete}" = true ]; then
-        echo -ne "\r${BC}     1.6  Creating Partitions${BG}             - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     1.6  Creating A Partitions${BG}              - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     1.6  Creating Partitions${BR}             - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     1.6  Creating A Partitions${BR}              - [ Incomplete ]${NO}\n"
     fi
 
-    if [ "${_Formating_Partition_Complete}" = true ]; then
-        echo -ne "\r${BC}     1.7  Formating Partitions${BG}            - [ Complete ]${NO}\n"
+    if [ "${_Formatting_Partition_Complete}" = true ]; then
+        echo -ne "\r${BC}     1.7  Formatting Partitions${BG}              - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     1.7  Formating Partitions${BR}            - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     1.7  Formatting Partitions${BR}              - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Mounting_Partition_Complete}" = true ]; then
-        echo -ne "\r${BC}     1.8  Mounting Partitions${BG}             - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     1.8  Mounting A Partitions${BG}              - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     1.8  Mounting Partitions${BR}             - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     1.8  Mounting A Partitions${BR}              - [ Incomplete ]${NO}\n"
     fi
 
-    if [ "${_Installing_Base_Complete}" = true ]; then
-        echo -ne "\r${BC}     1.9  Installing Base Packages${BG}        - [ Complete ]${NO}\n"
+    if [ "${_Installing_Arch_Complete}" = true ]; then
+        echo -ne "\r${BC}     1.9  Installing Arch Linux${BG}              - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     1.9  Installing Base Packages${BR}        - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     1.9  Installing Arch Linux${BR}              - [ Incomplete ]${NO}\n"
     fi
      
     if [ "${_Generating_FSTab_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.0  Generating FSTab${BG}                - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     2.0  Generating FSTab File${BG}              - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.0  Generating FSTab${BR}                - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.0  Generating FSTab File${BR}              - [ Incomplete ]${NO}\n"
     fi
-
 }
 
 _Chroot_Outline_Steps () {
 
     _Chroot_Title
     
-    if [ "${_Configuring_Localization_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.1  Configuring Localization${BG}    - [ Complete ]${NO}\n"
+    if [ "${_Setting_Localization_Complete}" = true ]; then
+        echo -ne "\r${BC}     2.1  Setting Localizations${BG}               - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.1  Configuring Localization${BR}    - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.1  Setting Localizations${BR}               - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Configuring_NManager_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.2  Configuring Network Manager${BG}            - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     2.2  Configuring A Network${BG}               - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.2  Configuring Network Manager${BR}            - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.2  Configuring A Network${BR}               - [ Incomplete ]${NO}\n"
     fi
 
-    if [ "${_Configuring_PacManager_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.3  Configuring Package Manager${BG}            - [ Complete ]${NO}\n"
+    if [ "${_Setting_PacManager_Complete}" = true ]; then
+        echo -ne "\r${BC}     2.3  Setting Pacman Config${BG}               - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.3  Configuring Package Manager${BR}            - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.3  Setting Pacman Config${BR}               - [ Incomplete ]${NO}\n"
     fi
 
-    if [ "${_Configuring_Extra_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.4  Configuring Extra Stuff${BG}              - [ Complete ]${NO}\n"
+    if [ "${_Optimizing_Experience_Complete}" = true ]; then
+        echo -ne "\r${BC}     2.4  Optimizing Experience${BG}               - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.4  Configuring Extra Stuff${BR}              - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.4  Optimizing Experience${BR}               - [ Incomplete ]${NO}\n"
     fi
 
-    if [ "${_Configuring_BLoader_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.5  Configuring Boot Loader${BG}              - [ Complete ]${NO}\n"
+    if [ "${_Setting_BLoader_Complete}" = true ]; then
+        echo -ne "\r${BC}     2.5  Setting A Boot Loader${BG}               - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.5  Configuring Boot Loader${BR}              - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.5  Setting A Boot Loader${BR}               - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Installing_Packages_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.6  Installing Extra Packages${BG}              - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     2.6  Installing A Packages${BG}               - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.6  Installing Extra Packages${BR}              - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.6  Installing A Packages${BR}               - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Creating_SFile_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.7  Creating Swap File${BG}              - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     2.7  Creating A Swap Files${BG}               - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.7  Creating Swap File${BR}              - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.7  Creating A Swap Files${BR}               - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Setting_RPass_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.8  Setting Root Password${BG}              - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     2.8  Setting Root Password${BG}               - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.8  Creating Root Password${BR}              - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.8  Setting Root Password${BR}               - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Setting_User_Complete}" = true ]; then
-        echo -ne "\r${BC}     2.9  Setting User Account${BG}              - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     2.9  Setting  User Account${BG}               - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     2.9  Setting User Account${BR}              - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     2.9  Setting  User Account${BR}               - [ Incomplete ]${NO}\n"
     fi
 
     if [ "${_Coping_Logs_Complete}" = true ]; then
-        echo -ne "\r${BC}     3.0  Coping Logs File${BG}              - [ Complete ]${NO}\n"
+        echo -ne "\r${BC}     3.0  Coping The Logs Files${BG}               - [ Complete ]${NO}\n"
     else
-        echo -ne "\r${BY}     3.0  Coping Logs File${BR}              - [ Incomplete ]${NO}\n"
+        echo -ne "\r${BY}     3.0  Coping The Logs Files${BR}               - [ Incomplete ]${NO}\n"
     fi
 }
 
 # ---------------------------------------------------------- #
 # ----------------- SCRIPT START FROM HERE ----------------- #
 # ---------------------------------------------------------- #
+
+# HIDE CURSOR :
+# ~~~~~~~~~~~~~
+printf '\e[?25l\e[?7l'
+
 
 # TITLE SHOW :
 # ~~~~~~~~~~~~
@@ -306,13 +312,16 @@ _Install_Title () {
 
 # CHECKING BOOT MODE :
 # ~~~~~~~~~~~~~~~~~~~~
-_Checking_BMode () {
+_Checking_Requirements () {
     clear
     if [ ! -d /sys/firmware/efi/efivars ]; then
         _Install_Outline_Steps
         _Error_Print "YOU MUST BOOT INTO UEFI MODE."
+    elif [[ ! -e /etc/arch-release ]]; then
+        _Install_Outline_Steps
+        _Error_Print "YOU MUST RUN THIS SCRIPT ON ARCH LINUX."
     else
-        _Checking_BMode_Complete=true
+        _Checking_Requirements_Complete=true
     fi    
 }
 
@@ -342,7 +351,9 @@ _Checking_Vars () {
     elif [[ $SWAPSIZE -lt 2 ]];  then
         _Error_Print "SPECIFY VARIABLE SWAPSIZE."
     elif [[ $BOOTLOADER != 0 && $BOOTLOADER != 1 ]]; then
-        _Error_Print "SPECIFY THE VARIABLE BOOTLOADER."
+        _Error_Print "SPECIFY VARIABLE BOOTLOADER."
+    elif [[ -z "$EDITOR"  ]]; then
+        _Error_Print "SPECIFY VARIABLE EDITOR."
     elif [[ ! $KERNEL == linux* ]]; then
         _Error_Print "SPECIFY THE VARIABLE KERNEL."
     else
@@ -362,7 +373,7 @@ _Setting_DTime () {
     fi
 }
 
-_Configuring_Pacman () {
+_Setting_Pacman () {
     clear
     _Install_Outline_Steps
     if
@@ -376,9 +387,9 @@ _Configuring_Pacman () {
         sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /etc/pacman.conf &>> $LOGFILE
         sed -i "s/^#ParallelDownloads = 5$/ParallelDownloads = 5/" /etc/pacman.conf &>> $LOGFILE
     then
-        _Configuring_Pacman_Complete=true
+        _Setting_Pacman_Complete=true
     else
-        _Error_Print "CONFIGURING PACMAN."
+        _Error_Print "CONFIGURING PACMAN CONFIG."
     fi
 }
 
@@ -401,7 +412,7 @@ _Wiping_Disks () {
         echo
         wipefs -af "$DISK" &> $LOGFILE
         sleep 0.5
-        sgdisk -Zo "$DISK" &>> $LOGFILE
+        sgdisk -Z "$DISK" &>> $LOGFILE
         sleep 0.5
     then
         _Wiping_Disks_Complete=true
@@ -468,7 +479,7 @@ _Formating_Partition () {
             fi
         fi
     then
-        _Formating_Partition_Complete=true
+        _Formatting_Partition_Complete=true
     else
         _Error_Print "FORMATTING PARTITIONS."
     fi
@@ -508,15 +519,15 @@ _Mounting_Partition () {
     fi
 }
 
-_Installing_Base () {
+_Installing_Arch () {
     clear
     _Install_Outline_Steps
     if
         pacstrap -K /mnt --noconfirm --disable-download-timeout base base-devel linux-firmware $KERNEL $KERNEL-headers $MICROCODE &>> $LOGFILE
     then
-        _Installing_Base_Complete=true
+        _Installing_Arch_Complete=true
     else
-        _Error_Print "INSTALLING BASE SYSTEM."
+        _Error_Print "INSTALLING ARCH LINUX."
     fi
 }
 
@@ -532,24 +543,11 @@ _Generating_FSTab () {
     fi
 }
 
-_Installing () {
-    _Checking_BMode
-    _Checking_Vars
-    _Setting_DTime
-    _Configuring_Pacman
-    _Checking_Dep
-    _Wiping_Disks
-    _Creating_Partition
-    _Formating_Partition
-    _Mounting_Partition
-    _Installing_Base
-    _Generating_FSTab
+_Installing_Complete () {
     clear
     _Install_Outline_Steps
+    _Info_Print "INSTALLING COMPLETE."
 }
-
-_Installing
-
 
 # ---------------------------------------------------------- #
 # ----------------- CHROOT START FROM HERE ----------------- #
@@ -563,7 +561,7 @@ _Chroot_Title () {
     echo
 }
 
-_Configuring_Localization () {
+_Setting_Localization () {
     clear
     if
         arch-chroot /mnt ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime &>> $LOGFILE
@@ -587,10 +585,9 @@ _Configuring_Localization () {
         echo "LC_TIME=$LOCALE" >> /mnt/etc/locale.conf
 
         echo "KEYMAP=$KEYBOARD" > /mnt/etc/vconsole.conf
-        echo "XKBLAYOUT=$KEYBOARD" >> /mnt/etc/vconsole.conf
 
     then
-        _Configuring_Localization_Complete=true
+        _Setting_Localization_Complete=true
     else
         _Error_Print "CONFIGURING LOCALIZATION."
     fi
@@ -615,7 +612,7 @@ _Configuring_NManager () {
     fi
 }
 
-_Configuring_PacManager () {
+_Setting_PacManager () {
     clear
     _Chroot_Outline_Steps
     if
@@ -635,28 +632,31 @@ _Configuring_PacManager () {
         echo "--verbose" > /mnt/etc/xdg/reflector/reflector.conf
 
     then
-        _Configuring_PacManager_Complete=true
+        _Setting_PacManager_Complete=true
     else
         _Error_Print "CONFIGURING PACKAGE MANAGER."
     fi
 }
 
-_Configuring_Extra () {
+_Optimizing_Experience () {
     clear
     _Chroot_Outline_Steps
     if
         echo "blacklist iTCO_wdt" > /mnt/etc/modprobe.d/nowatchdog.conf
+	    echo "blacklist pcspkr" > /mnt/etc/modprobe.d/nobeep.conf
+        echo "blacklist snd_pcsp" >> /mnt/etc/modprobe.d/nobeep.conf
+
         sed -i "s/^#DefaultTimeoutStopSec=.*/DefaultTimeoutStopSec=10s/" /mnt/etc/systemd/system.conf
 
         arch-chroot /mnt mkinitcpio -P &>> $LOGFILE
     then
-        _Configuring_Extra_Complete=true
+        _Optimizing_Experience_Complete=true
     else
         _Error_Print "CONFIGURING EXTRA STUFF."
     fi
 }
 
-_Configuring_BLoader () {
+_Setting_BLoader () {
     clear
     _Chroot_Outline_Steps
     if
@@ -688,7 +688,7 @@ _Configuring_BLoader () {
         fi
 
     then
-        _Configuring_BLoader_Complete=true
+        _Setting_BLoader_Complete=true
     else
         _Error_Print "CONFIGURING BOOT LOADER."
     fi
@@ -698,7 +698,7 @@ _Installing_Packages () {
     clear
     _Chroot_Outline_Steps
     if
-        arch-chroot /mnt pacman -S --noconfirm $PACKAGES &>> $LOGFILE
+        arch-chroot /mnt pacman -Sy --noconfirm $PACKAGES $EDITOR &>> $LOGFILE
     then
         _Installing_Packages_Complete=true
     else
@@ -729,7 +729,7 @@ _Setting_RPass () {
     clear
     _Chroot_Outline_Steps
     if
-        printf "%s\n%s" "${ROOTPASSWORD}" "${ROOTPASSWORD}" | arch-chroot /mnt passwd &>> $LOGFILE
+        printf "%s\n%s" "${ROOTPASS}" "${ROOTPASS}" | arch-chroot /mnt passwd &>> $LOGFILE
     then
         _Setting_RPass_Complete=true
     else
@@ -741,10 +741,13 @@ _Setting_User () {
     clear
     _Chroot_Outline_Steps
     if
-        arch-chroot /mnt useradd -mG wheel,audio,video,storage,network,power,optical -c "${NICKNAME}" -s "${which bash}" "${USERNAME}"
-        sed -i 's/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g' /mnt/etc/sudoers
+        arch-chroot /mnt useradd -mG wheel,audio,video,storage,network,power,optical -c "${NICKNAME}" -s $(which bash) "${USERNAME}"
+        printf "%s\n%s" "${USERPASS}" "${USERPASS}" | arch-chroot /mnt passwd $USERNAME &>> $LOGFILE
 
-        printf "%s\n%s" "${USERPASSWORD}" "${USERPASSWORD}" | arch-chroot /mnt passwd $USERNAME &>> $LOGFILE
+        sed -i "s/# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/g" /mnt/etc/sudoers
+        echo "Defaults pwfeedback" >> /mnt/etc/sudoers
+        echo "Defaults editor=$EDITOR" >> /mnt/etc/sudoers
+        echo "Defaults passprompt=\"Enter Your Code: \"" >> /mnt/etc/sudoers 
     then
         _Setting_User_Complete=true
     else
@@ -764,19 +767,46 @@ _Coping_Logs () {
     fi
 }
 
+_Chrooting_Complete () {
+    clear
+    _Chroot_Outline_Steps
+    printf "\e[?25h\e[?7h"
+
+}
+
+# ---------------------------------------------------------- #
+# ------------------- EXECUTING FUNCTIONS ------------------ #
+# ---------------------------------------------------------- #
+
+_Installing () {
+    _Checking_Requirements
+    _Checking_Vars
+    _Setting_DTime
+    _Setting_Pacman
+    _Checking_Dep
+    _Wiping_Disks
+    _Creating_Partition
+    _Formating_Partition
+    _Mounting_Partition
+    _Installing_Arch
+    _Generating_FSTab
+    _Installing_Complete
+}
+
 _Chrooting () {
-    _Configuring_Localization
+    _Setting_Localization
     _Configuring_NManager
-    _Configuring_PacManager
-    _Configuring_Extra
-    _Configuring_BLoader
+    _Setting_PacManager
+    _Optimizing_Experience
+    _Setting_BLoader
     _Installing_Packages
     _Creating_SFile
     _Setting_RPass
     _Setting_User
     _Coping_Logs
-    clear
-    _Chroot_Outline_Steps
+    _Chrooting_Complete
 }
 
-_Chrooting
+# _Installing
+
+# _Chrooting
