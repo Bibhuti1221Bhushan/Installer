@@ -170,6 +170,23 @@ check_connection() {
     fi
 }
 
+# TITLE SHOW :
+# ~~~~~~~~~~~~
+echo
+echo -e "${BOLD}${BLUE}${PADDING}@@@@@@@@   @@@@@@    @@@@@@   @@@ @@@      @@@@@@   @@@@@@@    @@@@@@@  @@@  @@@"  
+echo -e "${BOLD}${BLUE}${PADDING}@@@@@@@@  @@@@@@@@  @@@@@@@   @@@ @@@     @@@@@@@@  @@@@@@@@  @@@@@@@@  @@@  @@@"  
+echo -e "${BOLD}${BLUE}${PADDING}@@!       @@!  @@@  !@@       @@! !@@     @@!  @@@  @@!  @@@  !@@       @@!  @@@"  
+echo -e "${BOLD}${BLUE}${PADDING}!@!       !@!  @!@  !@!       !@! @!!     !@!  @!@  !@!  @!@  !@!       !@!  @!@"  
+echo -e "${BOLD}${BLUE}${PADDING}@!!!:!    @!@!@!@!  !!@@!!     !@!@!      @!@!@!@!  @!@!!@!   !@!       @!@!@!@!"  
+echo -e "${BOLD}${BLUE}${PADDING}!!!!!:    !!!@!!!!   !!@!!!     @!!!      !!!@!!!!  !!@!@!    !!!       !!!@!!!!"  
+echo -e "${BOLD}${BLUE}${PADDING}!!:       !!:  !!!       !:!    !!:       !!:  !!!  !!: :!!   :!!       !!:  !!!"  
+echo -e "${BOLD}${BLUE}${PADDING}:!:       :!:  !:!      !:!     :!:       :!:  !:!  :!:  !:!  :!:       :!:  !:!"  
+echo -e "${BOLD}${BLUE}${PADDING}.:: ::::  ::   :::  :::: ::      ::       ::   :::  ::   :::   ::: :::  ::   :::"  
+echo -e "${BOLD}${BLUE}${PADDING}: :: ::.  .:   : :  :: : :       :        .:   : :  .:   : :   :: :: :   :   : :"
+echo   
+echo -e "${BOLD}${GREEN}${PADDING}================================================================================="
+echo
+
 
 # Configuring /etc/mkinitcpio.conf.
 info_print "Configuring /etc/mkinitcpio.conf."
@@ -756,6 +773,11 @@ REALEND
 
 
 
+systemctl restart pacman-init &>> $LOGFILE
+killall gpg-agent &>> $LOGFILE
+rm -rf /etc/pacman.d/gnupg/ &>> $LOGFILE
+pacman-key --init &>> $LOGFILE
+pacman-key --populate archlinux &>> $LOGFILE
 
 
 
