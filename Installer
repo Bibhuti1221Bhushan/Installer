@@ -1,8 +1,10 @@
 #!/bin/bash
 
+# Author : Bibhuti Bhushan                                   
+# Github : https://github.com/Bibhuti1221Bhushan/Installer   
+
 # ---------------------------------------------------------- #
-# Author : Bibhuti Bhushan                                   #
-# Github : https://github.com/Bibhuti1221Bhushan/Installer   #
+# ---------------------- SET VARIABLE ---------------------- #
 # ---------------------------------------------------------- #
 
 # SET GENERAL VARIABLES :
