@@ -288,6 +288,8 @@ _Chroot_Outline_Steps () {
 # ~~~~~~~~~~~~~
 printf '\e[?25l\e[?7l'
 
+pacman -Sy --noconfirm figlet &>> $LOGFILE
+
 # TITLE SHOW :
 # ~~~~~~~~~~~~
 _Install_Title () {
@@ -658,25 +660,27 @@ _Setting_BLoader () {
             arch-chroot /mnt pacman -S --noconfirm grub efibootmgr &>> $LOGFILE
             arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/ --bootloader-id="Boot Manager" --recheck &>> $LOGFILE
             arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg &>> $LOGFILE
-        elif [[ "$BOOTLOADER" == "1" ]]; then
+        else
             arch-chroot /mnt bootctl install --esp-path=/boot/ &>> $LOGFILE
             echo "default arch.conf" >> /mnt/boot/loader/loader.conf
             echo "timeout 0" >> /mnt/boot/loader/loader.conf
             echo "title   Arch Linux" >> /mnt/boot/loader/entries/arch.conf
             echo "linux   /vmlinuz-$KERNEL" >> /mnt/boot/loader/entries/arch.conf
-            echo "initrd  /$MICROCODE.img" >> /mnt/boot/loader/entries/arch.conf
+            if [[  -n "$MICROCODE" ]]; then
+                echo "initrd  /$MICROCODE.img" >> /mnt/boot/loader/entries/arch.conf
+            else
             echo "initrd  /initramfs-$KERNEL.img" >> /mnt/boot/loader/entries/arch.conf
             if [[ $DISK =~ ^/dev/nvme.* ]]; then
                 if [[ "$SWAP" == "1" ]]; then
-                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p3) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
+                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p3) quiet splash rw rootfstype=ext4" >> /mnt/boot/loader/entries/arch.conf
                 else
-                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p2) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
+                   echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}p2) quiet splash rw rootfstype=ext4" >> /mnt/boot/loader/entries/arch.conf
                 fi
             else
                 if [[ "$SWAP" == "1" ]]; then
-                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}3) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
+                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}3) quiet splash rw rootfstype=ext4" >> /mnt/boot/loader/entries/arch.conf
                 else
-                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}2) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
+                    echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}2) quiet splash rw rootfstype=ext4" >> /mnt/boot/loader/entries/arch.conf
                 fi
             fi
         fi
