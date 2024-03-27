@@ -2,6 +2,12 @@
 
 # WORKING ON THIS SCRIPT :
 Creating_SFile
+git clone https://github.com/Bibhuti1221Bhushan/Corners $HOME/Documents/Github
+
+git clone https://github.com/Bibhuti1221Bhushan/Corners
+cd Corners
+./Install.sh
+
 
 curl -o Demo.sh https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Demo.sh
 
