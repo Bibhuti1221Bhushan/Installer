@@ -803,12 +803,12 @@ _Chrooting () {
     _Chrooting_Complete
 }
 
-# _Installing
+_Installing
 
-# _Chrooting
+_Chrooting
 
-clear
-_Install_Outline_Steps
-sleep 5
-clear
-_Chroot_Outline_Steps
+# clear
+# _Install_Outline_Steps
+# sleep 5
+# clear
+# _Chroot_Outline_Steps
