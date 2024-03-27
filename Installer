@@ -1,5 +1,4 @@
 #!/bin/bash
-sudo pacman -S --noconfirm figlet >> $LOGFILE 
 
 # Author : Bibhuti Bhushan                                   
 # Github : https://github.com/Bibhuti1221Bhushan/Installer   
@@ -36,7 +35,7 @@ SWAPSIZE=4                               # SET SIZE OF SWAP PARTITION OR SWAP FI
 
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
-BOOTLOADER=1                             # 0 = GRUB & 1 = SYSTEMD-BOOT
+BOOTLOADER=0                             # 0 = GRUB & 1 = SYSTEMD-BOOT
 
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
@@ -289,7 +288,6 @@ _Chroot_Outline_Steps () {
 # ~~~~~~~~~~~~~
 printf '\e[?25l\e[?7l'
 
-
 # TITLE SHOW :
 # ~~~~~~~~~~~~
 _Install_Title () {
@@ -366,19 +364,6 @@ _Setting_Pacman () {
     clear
     _Install_Outline_Steps
     if
-        while true; do
-            STATUS=$(systemctl is-active pacman-init.service)
-
-            if [ "$STATUS" == "active" ]; then
-                echo -e "PACMAN-INIT.SERVICE IS RUNNING.\n" &>> $LOGFILE
-                break
-            else
-                echo -e "WAITING FOR PACMAN-INIT.SERVICE TO START...\n" &>> $LOGFILE
-                systemctl restart pacman-init.service &>> $LOGFILE
-                sleep 0.5  
-            fi
-        done
-
         sed -i 's/#Color/Color\nILoveCandy/' /etc/pacman.conf &>> $LOGFILE
         sed -i '/\[multilib\]/,/Include/s/^#//' /etc/pacman.conf &>> $LOGFILE
         sed -i 's/#VerbosePkgLists/VerbosePkgLists/' /etc/pacman.conf &>> $LOGFILE
@@ -393,8 +378,20 @@ _Setting_Pacman () {
 _Checking_Dep () {
     clear
     _Install_Outline_Steps
-    if
-        pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring &>> $LOGFILE
+    if  
+        while true; do
+            STATUS=$(systemctl is-active pacman-init.service)
+
+            if [ "$STATUS" == "active" ]; then
+                echo -e "PACMAN-INIT.SERVICE IS RUNNING.\n" &>> $LOGFILE
+                break
+            else
+                echo -e "WAITING FOR PACMAN-INIT.SERVICE TO START...\n" &>> $LOGFILE
+                systemctl restart pacman-init.service &>> $LOGFILE
+                sleep 0.5  
+            fi
+        done
+        pacman -Sy --noconfirm --disable-download-timeout archlinux-keyring figlet &>> $LOGFILE
     then
         _Checking_Dep_Complete=true
     else
@@ -657,7 +654,11 @@ _Setting_BLoader () {
     clear
     _Chroot_Outline_Steps
     if
-        if [[ "$BOOTLOADER" == "1" ]]; then
+        if [[ "$BOOTLOADER" == "0" ]]; then
+            arch-chroot /mnt pacman -S --noconfirm grub efibootmgr &>> $LOGFILE
+            arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/ --bootloader-id="Boot Manager" --recheck &>> $LOGFILE
+            arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg &>> $LOGFILE
+        elif [[ "$BOOTLOADER" == "1" ]]; then
             arch-chroot /mnt bootctl install --esp-path=/boot/ &>> $LOGFILE
             echo "default arch.conf" >> /mnt/boot/loader/loader.conf
             echo "timeout 0" >> /mnt/boot/loader/loader.conf
@@ -678,10 +679,6 @@ _Setting_BLoader () {
                     echo "options root=PARTUUID=$(blkid -s PARTUUID -o value ${DISK}2) quiet splash rw" >> /mnt/boot/loader/entries/arch.conf
                 fi
             fi
-        else
-            arch-chroot /mnt pacman -S --noconfirm grub efibootmgr &>> $LOGFILE
-            arch-chroot /mnt grub-install --target=x86_64-efi --efi-directory=/boot/ --bootloader-id="Boot Manager" --recheck &>> $LOGFILE
-            arch-chroot /mnt grub-mkconfig -o /boot/grub/grub.cfg &>> $LOGFILE
         fi
 
     then
@@ -756,7 +753,7 @@ _Coping_Logs () {
     clear
     _Chroot_Outline_Steps
     if
-        cp Installer.log /mnt/home/$USERNAME &>> $LOGFILE
+        cp $LOGFILE /mnt/home/$USERNAME &>> $LOGFILE
     then
         _Coping_Logs_Complete=true
     else
