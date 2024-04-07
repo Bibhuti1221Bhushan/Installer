@@ -11,8 +11,8 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~
 USERNAME="Bibhuti"                       # SET USER-NAME
 NICKNAME="Bibhuti Bhushan"               # SET NICK-NAME
-ROOTPASS="////"                          # SET ROOT-PASS
-USERPASS="////"                          # SET USER-PASS
+ROOTPASS="\\\\"                          # SET ROOT-PASS
+USERPASS="\\\\"                          # SET USER-PASS
 HOSTNAME="iTunes"                        # SET HOST-NAME
 TIMEZONE="Asia/Kolkata"                  # SET TIME-ZONE
 KEYBOARD="us"                            # SET KEYBOARDS
@@ -35,7 +35,7 @@ SWAPSIZE=4                               # SET SIZE OF SWAP PARTITION OR SWAP FI
 
 # SET BOOT LOADER :
 # ~~~~~~~~~~~~~~~~~
-BOOTLOADER=0                             # 0 = GRUB & 1 = SYSTEMD-BOOT
+BOOTLOADER=1                             # 0 = GRUB & 1 = SYSTEMD-BOOT
 
 # SET PACKAGES :
 # ~~~~~~~~~~~~~~
@@ -710,12 +710,12 @@ _Creating_SFile () {
     _Chroot_Outline_Steps
     if
         if [[ "$SWAP" == "2" ]]; then
-            mkdir -vp /mnt/swap &>> $LOGFILE
-            arch-chroot /mnt dd if=/dev/zero of=/swap/swapfile bs=1M count=$(("$SWAPSIZE" * 1024)) &>> $LOGFILE
-            arch-chroot /mnt chmod 600 /swap/swapfile &>> $LOGFILE
-            arch-chroot /mnt mkswap /swap/swapfile &>> $LOGFILE
-            arch-chroot /mnt swapon /swap/swapfile &>> $LOGFILE
-            echo '/swap/swapfile                      none       swap       sw 0 0' | tee -a /mnt/etc/fstab &>> $LOGFILE
+            mkdir -vp /mnt/swap #&>> $LOGFILE
+            arch-chroot /mnt dd if=/dev/zero of=/swap/swapfile bs=1M count=$(("$SWAPSIZE" * 1024)) #&>> $LOGFILE
+            arch-chroot /mnt chmod 600 /swap/swapfile #&>> $LOGFILE
+            arch-chroot /mnt mkswap /swap/swapfile #&>> $LOGFILE
+            arch-chroot /mnt swapon /swap/swapfile #&>> $LOGFILE
+            echo '/swap/swapfile                      none       swap       sw 0 0' | tee -a /mnt/etc/fstab #&>> $LOGFILE
         fi
     then
         _Creating_SFile_Complete=true
