@@ -30,13 +30,13 @@ fi
 # DOWNLOADING FILES :
 # ~~~~~~~~~~~~~~~~~~~
 # curl https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Demo.sh --output $HOME/Installer/Resources/Demo.sh # Temporary
-source "$HOME/Documents/Working/Github/Installer/Resources/Installer.conf"    # Temporary
+# source "$HOME/Documents/Working/Github/Installer/Resources/Installer.conf"    # Temporary
 
 cd "$DIR"
-# curl https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Setup --output $DIR/Setup.sh &>> $LOG_FILE
-# curl https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Resources/Installer.sh --output $DIR/Resources/Installer.sh &>> $LOG_FILE
-# curl https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Resources/Installer.conf --output $DIR/Resources/Installer.conf &>> $LOG_FILE
-# source "$DIR/Resources/Installer.conf"
+curl https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Setup --output $DIR/Setup.sh &>> $LOG_FILE
+curl https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Resources/Installer.sh --output $DIR/Resources/Installer.sh &>> $LOG_FILE
+curl https://raw.githubusercontent.com/Bibhuti1221Bhushan/Installer/Global/Resources/Installer.conf --output $DIR/Resources/Installer.conf &>> $LOG_FILE
+source "$DIR/Resources/Installer.conf"
 
 # HEADER FUNCTION :
 # ~~~~~~~~~~~~~~~~~
