@@ -268,6 +268,7 @@ while true; do
             ;;
         o|O)
             nano --modernbindings --linenumbers --nohelp --zero --saveonexit "$DIR/Resources/Installer.conf"
+            source "$DIR/Resources/Installer.conf" 
             ;;
         l|L)
             echo -e "\e[?25h"
